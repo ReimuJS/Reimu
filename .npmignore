@@ -1,0 +1,15 @@
+# Not Needed
+examples/
+.vscode/
+.env
+.gitignore
+tsconfig.json
+typedoc.json
+images/
+assets/
+docs/
+src/
+
+# Testing
+testing.js
+testing/

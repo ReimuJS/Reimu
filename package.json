@@ -1,0 +1,42 @@
+{
+  "name": "reimu",
+  "version": "0.0.0",
+  "description": "Simple and reliable real-time bidirectional communication",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "commit": "git-cz",
+    "acp": "git add . && npm run commit && git push"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sup3rFire/Reimu.git"
+  },
+  "keywords": [
+    "simple",
+    "reliable",
+    "realtime",
+    "real-time",
+    "ws",
+    "websocket"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Sup3rFire/Reimu/issues"
+  },
+  "homepage": "https://github.com/Sup3rFire/Reimu#readme",
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "dependencies": {
+    "@types/ws": "^7.4.5",
+    "ws": "^7.5.0"
+  },
+  "devDependencies": {
+    "cz-conventional-changelog": "^3.3.0",
+    "semantic-release": "^17.4.4",
+    "typescript": "^4.3.4"
+  }
+}
