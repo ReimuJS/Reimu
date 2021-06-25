@@ -2,7 +2,7 @@
   "name": "reimu",
   "version": "0.0.0",
   "description": "Simple and reliable real-time bidirectional communication",
-  "main": "dist/index.js",
+  "main": "dist/server/index.js",
   "scripts": {
     "build": "tsc",
     "commit": "git-cz",
@@ -31,7 +31,9 @@
     }
   },
   "dependencies": {
+    "@types/node": "^15.12.4",
     "@types/ws": "^7.4.5",
+    "msgpack-lite": "^0.1.26",
     "ws": "^7.5.0"
   },
   "devDependencies": {
