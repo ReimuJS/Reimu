@@ -31,6 +31,7 @@
     }
   },
   "dependencies": {
+    "@types/msgpack-lite": "^0.1.7",
     "@types/node": "^15.12.4",
     "@types/ws": "^7.4.5",
     "fs": "^0.0.1-security",
