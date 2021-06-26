@@ -1,3 +1,3 @@
-import Server from "./websocket/WebSocketManager";
+import Server from "./Server";
 
 export { Server };

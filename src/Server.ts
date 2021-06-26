@@ -2,16 +2,25 @@ import EventEmitter from "events";
 import WebSocket from "ws";
 import { Server as HTTPServer } from "http";
 import { Server as HTTPSServer } from "https";
+import fs from "fs";
 
-export default class WebSocketManager extends EventEmitter {
+const client = fs.readFileSync(`${__dirname}/../client.js`);
+
+export default class Server extends EventEmitter {
   /**
-   * The WebSocketManager Class
+   * The Server Class
    * @constructor
    */
-  constructor(options: { server: HTTPServer | HTTPSServer; path?: string }) {
+  constructor(options: {
+    server: HTTPServer | HTTPSServer;
+    path?: string;
+    serveClient?: boolean;
+  }) {
     super();
 
-    !options.path ? (this.path = "/reimu") : (this.path = options.path);
+    this.path = options.path || "/reimu";
+    this.serveClient = options.serveClient || true;
+
     this.server = options.server;
 
     this.start();
@@ -33,8 +42,16 @@ export default class WebSocketManager extends EventEmitter {
   public path: string;
 
   /**
+   * Whether or not to serve the client files
+   * @type {boolean}
+   * @readonly
+   */
+  public serveClient!: boolean;
+
+  /**
    * The HTTP(S) server the WebSocket is connected to
    * @type {HTTPServer | HTTPSServer}
+   * @readonly
    */
   public server!: HTTPServer | HTTPSServer;
 
@@ -45,7 +62,7 @@ export default class WebSocketManager extends EventEmitter {
    * @param {any} request
    * @param {any} socket
    * @param {any} head
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   private listener = async (
     request: any,
@@ -54,13 +71,23 @@ export default class WebSocketManager extends EventEmitter {
   ): Promise<void> => {
     const pathname = request.url;
 
-    console.log(pathname, this.path, this.ws);
     if (pathname === this.path && this.ws) {
       this.ws.handleUpgrade(request, socket, head, (ws) => {
-        ws.send("test");
-
         ws.on("message", (data) => {});
       });
+    }
+  };
+
+  /**
+   * Request Handler
+   * @param {any} req
+   * @param {any} res
+   * @returns {Promise<void>}
+   */
+  private requestHandler = async (req: any, res: any): Promise<void> => {
+    if (req.url.startsWith(`${this.path}/reimu.js`)) {
+      res.writeHead(200, { "Content-Type": "text/javascript" });
+      res.end(client);
     }
   };
 
@@ -71,6 +98,7 @@ export default class WebSocketManager extends EventEmitter {
   public start(): void {
     this.server.on("upgrade", this.listener);
     this.ws = new WebSocket.Server({ noServer: true });
+    this.server.on("request", this.requestHandler);
   }
 
   /**
@@ -83,6 +111,7 @@ export default class WebSocketManager extends EventEmitter {
       this.emit("close");
     });
     this.ws = undefined;
+    this.server.off("request", this.requestHandler);
   }
 }
 
