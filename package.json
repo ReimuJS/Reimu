@@ -4,8 +4,8 @@
   "description": "Simple and reliable real-time bidirectional communication",
   "main": "dist/server/index.js",
   "scripts": {
-    "build": "rm -rf dist/ && tsc && cat ./src/*.js ./node_modules/msgpack-lite/dist/msgpack.min.js > ./dist/client.js",
-    "build:windows": "npm run del:windows && tsc && copy /Y .\\src\\*.js+.\\node_modules\\msgpack-lite\\dist\\msgpack.min.js .\\dist\\",
+    "build": "rm -rf dist/ && tsc && cat ./dist/client/*.js ./node_modules/msgpack-lite/dist/msgpack.min.js > ./dist/client.js",
+    "build:windows": "npm run del:windows && tsc && copy /Y .\\dist\\client\\*.js+.\\node_modules\\msgpack-lite\\dist\\msgpack.min.js .\\dist\\client.js",
     "del:windows": "IF EXIST .\\dist\\ rmdir /Q/S .\\dist\\",
     "commit": "git-cz",
     "acp": "git add . && npm run commit && git push"

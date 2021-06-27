@@ -13,17 +13,17 @@ export default class Message {
     let decoded: any;
     try {
       if (typeof data == "string") {
-        connection.disconnect(3001);
+        connection.disconnect(1002);
         return;
       }
       decoded = msgpack.decode(new Uint8Array(data as ArrayBufferLike));
     } catch (e) {
-      connection.disconnect(3001);
+      connection.disconnect(1002);
     }
     if (!decoded) return;
 
     if (!decoded.type) {
-      connection.disconnect(3001);
+      connection.disconnect(1002);
       return;
     }
 
@@ -31,18 +31,25 @@ export default class Message {
 
     if (decoded.id == undefined) {
       if (!decoded.for) {
-        connection.disconnect(3001);
+        connection.disconnect(1002);
         return;
       }
       this.id = decoded.for;
 
       switch (decoded.type) {
         case "acknoledge":
-          // TODO: Remove packet from list droppedPackets / awaitSystem
+          const droppedPacket = connection.droppedPackets.find(
+            (data) => data.id == decoded.replyFor
+          );
+          if (!droppedPacket) return;
+          connection.droppedPackets.splice(
+            connection.droppedPackets.indexOf(droppedPacket),
+            1
+          );
           break;
 
         default:
-          connection.disconnect(3001);
+          connection.disconnect(1002);
           break;
       }
 
@@ -51,6 +58,10 @@ export default class Message {
       );
 
       if (!initialMessage) return;
+      connection.awaitCallback.splice(
+        connection.awaitCallback.indexOf(initialMessage),
+        1
+      );
       switch (decoded.type) {
         case "acknoledge":
           if (initialMessage.callback.type != "acknoledge") return;
@@ -62,7 +73,7 @@ export default class Message {
           break;
 
         default:
-          connection.disconnect(3001);
+          connection.disconnect(1002);
           return;
       }
     } else {
@@ -76,7 +87,7 @@ export default class Message {
         break;
 
       default:
-        connection.disconnect(3001);
+        connection.disconnect(1002);
         return;
     }
   }

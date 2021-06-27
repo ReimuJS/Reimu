@@ -3,7 +3,7 @@ import msgpack from "msgpack-lite";
 import WebSocket from "ws";
 import uniqid from "uniqid";
 import Message from "./Message";
-import { closeCodes, DecodedMessage } from "../index";
+import { DecodedMessage } from "../index";
 
 export default class Connection extends EventEmitter {
   /**
@@ -18,8 +18,8 @@ export default class Connection extends EventEmitter {
     this.messageId = 0;
     this.connected = false;
 
-    this.ws.on("close", () => {
-      this.emit("close", this.close);
+    this.ws.on("close", (code) => {
+      this.emit("close", this.closeCode || code, !!this.closeCode);
       this.connected = false;
       if (this.droppedPackets.length > 0)
         droppedPackets.set(this.id, this.droppedPackets);
@@ -48,10 +48,8 @@ export default class Connection extends EventEmitter {
   // Variables
 
   private ws;
+  private closeCode?: number;
   private messageId: number;
-  private droppedPackets: DecodedMessage[] = [];
-  private awaitSystem: DecodedMessage[] = [];
-  private close?: { code: number; reason: string };
 
   /**
    * The connection id
@@ -64,6 +62,12 @@ export default class Connection extends EventEmitter {
    * @type {boolean}
    */
   public connected: boolean;
+
+  /**
+   * Packets that haven't been acknoledged
+   * @type {DecodedMessage[]}
+   */
+  public droppedPackets: DecodedMessage[] = [];
 
   /**
    * Messages that are awaiting callbacks
@@ -90,11 +94,7 @@ export default class Connection extends EventEmitter {
     const dataEncoded = msgpack.encode(data);
     this.ws?.send(dataEncoded);
 
-    if (!system) {
-      this.droppedPackets.push(data);
-    } else {
-      this.awaitSystem.push(data);
-    }
+    this.droppedPackets.push({ ...data, system: !!system });
 
     if (!!callback) {
       this.awaitCallback.push({ ...data, callback });
@@ -106,20 +106,11 @@ export default class Connection extends EventEmitter {
    * @param {number} code - The error code
    */
   public disconnect(code: number) {
+    this.closeCode = code;
     const mId = this.messageId++;
-    this.close = {
-      code,
-      //@ts-ignore
-      reason: closeCodes[code],
-    };
 
     const ifNotAcknoledge = setInterval(() => {
-      if (this.connected)
-        this.ws.close(
-          code,
-          //@ts-ignore
-          closeCodes[code]
-        );
+      if (this.connected) this.ws.close(code);
     }, 10000);
     this.sendRaw(
       {
@@ -130,11 +121,7 @@ export default class Connection extends EventEmitter {
       {
         cb: () => {
           clearInterval(ifNotAcknoledge);
-          this.ws.close(
-            code,
-            //@ts-ignore
-            closeCodes[code]
-          );
+          this.ws.close(code);
         },
         type: "acknoledge",
       },
@@ -181,8 +168,5 @@ export default interface WebSocketManager {
   /**
    * Emitted when the connection is closed
    */
-  on(
-    event: "close",
-    callback: (code?: { code: number; message: string }) => void
-  ): this;
+  on(event: "close", callback: (code: number, server: boolean) => void): this;
 }
