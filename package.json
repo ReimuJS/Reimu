@@ -4,7 +4,9 @@
   "description": "Simple and reliable real-time bidirectional communication",
   "main": "dist/server/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist/ && tsc && cp ./node_modules/msgpack-lite/dist/msgpack.min.js ./dist/",
+    "build:windows": "npm run del:windows && tsc && copy /Y .\\node_modules\\msgpack-lite\\dist\\msgpack.min.js .\\dist\\",
+    "del:windows": "IF EXIST .\\dist\\ rmdir /Q/S .\\dist\\",
     "commit": "git-cz",
     "acp": "git add . && npm run commit && git push"
   },
