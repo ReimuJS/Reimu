@@ -4,6 +4,7 @@ import { Server as HTTPServer, IncomingMessage, ServerResponse } from "http";
 import { Server as HTTPSServer } from "https";
 import fs from "fs";
 import Connection from "./connection/Connection";
+import { DecodedMessage } from ".";
 
 const client = fs.readFileSync(`${__dirname}/../client.js`);
 
@@ -16,13 +17,11 @@ export default class Server extends EventEmitter {
     server: HTTPServer | HTTPSServer;
     path?: string;
     serveClient?: boolean;
-    recieveOrdered?: boolean;
   }) {
     super();
 
     this.path = options.path || "/reimu";
     this.serveClient = options.serveClient || true;
-    this.ordered = options.recieveOrdered || true;
 
     this.server = options.server;
 
@@ -35,8 +34,7 @@ export default class Server extends EventEmitter {
   private path: string;
   private serveClient!: boolean;
   private server!: HTTPServer | HTTPSServer;
-  private droppedPackets: Map<string, any> = new Map();
-  private ordered: boolean;
+  private droppedPackets: Map<string, DecodedMessage[]> = new Map();
 
   // Functions
 
@@ -49,11 +47,7 @@ export default class Server extends EventEmitter {
 
     if (pathname === this.path && this.ws) {
       this.ws.handleUpgrade(request, socket, head, async (ws) => {
-        const connection = new Connection(
-          ws,
-          this.droppedPackets,
-          this.ordered
-        );
+        const connection = new Connection(ws, this.droppedPackets);
         this.emit("connect", connection, request);
       });
     }

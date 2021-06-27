@@ -1,6 +1,14 @@
 import Server from "./Server";
+import Connection from "./connection/Connection";
+import Message from "./connection/Message";
 
-export { Server };
+export { Server, Connection, Message };
+
+export interface DecodedMessage {
+  id: number;
+  type: string;
+  data: any;
+}
 
 export const closeCodes = {
   1000: "General client failure",
