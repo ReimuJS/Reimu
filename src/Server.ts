@@ -6,7 +6,7 @@ import fs from "fs";
 import Connection from "./connection/Connection";
 import { DecodedMessage } from ".";
 
-const client = fs.readFileSync(`${__dirname}/../client.js`);
+const client = fs.readFileSync(`${__dirname}/client.js`);
 
 export default class Server extends EventEmitter {
   /**

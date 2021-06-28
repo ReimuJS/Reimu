@@ -21,7 +21,7 @@ export default class Connection extends EventEmitter {
     this.ws.on("close", (code) => {
       this.emit("close", this.closeCode || code, !!this.closeCode);
       this.connected = false;
-      if (this.droppedPackets.length > 0)
+      if (this.droppedPackets.length > 0 && !this.closeCode)
         droppedPackets.set(this.id, this.droppedPackets);
     });
 
@@ -36,8 +36,8 @@ export default class Connection extends EventEmitter {
         data: { id: this.id },
       },
       {
-        cb: () => {
-          // TODO: check if user sends a resume packet in response
+        cb: (data) => {
+          // TODO: check if user sends a resume packet in response and resume
         },
         type: "response",
       },
@@ -78,7 +78,7 @@ export default class Connection extends EventEmitter {
     type: string;
     data: any;
     callback:
-      | { cb: (data: any) => void; type: "response" }
+      | { cb: (data: Message) => void; type: "response" }
       | { cb: () => void; type: "acknoledge" };
   }[] = [];
 
@@ -87,7 +87,7 @@ export default class Connection extends EventEmitter {
   private sendRaw = async (
     data: any,
     callback?:
-      | { cb: (data: any) => void; type: "response" }
+      | { cb: (data: Message) => void; type: "response" }
       | { cb: () => void; type: "acknoledge" },
     system?: boolean
   ) => {
@@ -135,7 +135,7 @@ export default class Connection extends EventEmitter {
    * @param {Function} [responseCallback] - The callback to use if a response is sent
    * @returns {void | Message}
    */
-  public send(data: any, responseCallback?: (data: any) => void): void {
+  public send(data: any, responseCallback?: (data: Message) => void): void {
     const message = { id: this.messageId++, type: "message", data };
     this.sendRaw(
       message,
@@ -159,11 +159,6 @@ export default interface WebSocketManager {
    * Emitted when the connection recieves a message
    */
   on(event: "message", callback: (message: Message) => void): this;
-
-  /**
-   * Emitted when the connection disconnected
-   */
-  on(event: "disconnect", callback: (fatal: boolean) => void): this;
 
   /**
    * Emitted when the connection is closed
