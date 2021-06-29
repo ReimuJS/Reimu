@@ -2,7 +2,7 @@
   "name": "reimu",
   "version": "0.0.0",
   "description": "Simple and reliable real-time bidirectional communication",
-  "main": "dist/server/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist/ && tsc",
     "build:windows": "npm run del:windows && tsc",
