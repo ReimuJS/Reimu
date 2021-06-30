@@ -19,8 +19,19 @@ export default class Server extends EventEmitter {
     server: HTTPServer | HTTPSServer;
     path?: string;
     serveClient?: boolean;
+    pingTimeout?: number;
+    responseTimeout?: number;
+    reconnects?: number;
+    reconnectTimeout?: number;
   }) {
     super();
+
+    this.options = {
+      pingTimeout: options.pingTimeout || 5000,
+      responseTimeout: options.responseTimeout || 15000,
+      reconnects: options.reconnects || 10,
+      reconnectTimeout: options.reconnectTimeout || 40000,
+    };
 
     this.path = options.path || "/reimu";
     this.serveClient = options.serveClient || true;
@@ -37,6 +48,19 @@ export default class Server extends EventEmitter {
   private serveClient!: boolean;
   private server!: HTTPServer | HTTPSServer;
   private droppedPackets: Map<string, DecodedMessage[]> = new Map();
+  private reconnects: Map<string, { reconnects: number; lastReconnect: Date }> =
+    new Map();
+
+  /**
+   * Options to be used in connections
+   * @type {Object<string, number>}
+   */
+  public options: {
+    pingTimeout: number;
+    responseTimeout: number;
+    reconnects: number;
+    reconnectTimeout: number;
+  };
 
   // Functions
 
@@ -49,8 +73,13 @@ export default class Server extends EventEmitter {
 
     if (pathname === this.path && this.ws) {
       this.ws.handleUpgrade(request, socket, head, async (ws) => {
-        const connection = new Connection(ws, this.droppedPackets);
-        this.emit("connect", connection, request);
+        const connection = new Connection(
+          ws,
+          this.droppedPackets,
+          this.reconnects,
+          this,
+          request
+        );
       });
     }
   };

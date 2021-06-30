@@ -4,21 +4,31 @@ import WebSocket from "ws";
 import uniqid from "uniqid";
 import Message from "./Message";
 import { DecodedMessage } from "../index";
+import Server from "../Server";
+import { IncomingMessage } from "http";
 
 export default class Connection extends EventEmitter {
   /**
    * The Connection Class
    * @constructor
    */
-  constructor(ws: WebSocket, droppedPackets: Map<string, DecodedMessage[]>) {
+  constructor(
+    ws: WebSocket,
+    droppedPackets: Map<string, DecodedMessage[]>,
+    reconnects: Map<string, { reconnects: number; lastReconnect: Date }>,
+    server: Server,
+    request: IncomingMessage
+  ) {
     super();
 
     this.ws = ws;
     this.id = uniqid();
     this.messageId = 0;
     this.connected = false;
+    this.server = server;
 
     this.ws.on("close", (code) => {
+      this.pingTimer && clearInterval(this.pingTimer);
       this.emit("close", this.closeCode || code, !!this.closeCode);
       this.connected = false;
       if (this.droppedPackets.length > 0 && !this.closeCode)
@@ -37,16 +47,41 @@ export default class Connection extends EventEmitter {
       },
       {
         cb: (data) => {
-          // TODO: check if user sends a resume packet in response and resume and set connected = true
+          if (data.data.id != this.id) {
+            this.id = data.data.id;
+            let pastReconnects = reconnects.get(this.id) || {
+              reconnects: 0,
+              lastReconnect: new Date(),
+            };
+
+            if (
+              new Date().getTime() - pastReconnects.lastReconnect.getTime() >
+              server.options.reconnectTimeout
+            )
+              pastReconnects.reconnects = 0;
+            pastReconnects.reconnects++;
+
+            reconnects.set(this.id, pastReconnects);
+
+            // TODO: Send past dropped packets and clear them
+          } else {
+            server.emit("connect", this, request);
+          }
+          this.connected = true;
         },
         type: "response",
       },
       true
     );
+    this.pingTimer = setInterval(() => {
+      this.ping();
+    }, 5000);
   }
 
   // Variables
 
+  private server;
+  private pingTimer?: NodeJS.Timeout;
   private ws;
   private closeCode?: number;
   private messageId: number;
@@ -74,7 +109,8 @@ export default class Connection extends EventEmitter {
    * @type {any[]}
    */
   public awaitCallback: {
-    id: number;
+    id?: number;
+    for?: number;
     type: string;
     data: any;
     callback:
@@ -83,6 +119,10 @@ export default class Connection extends EventEmitter {
   }[] = [];
 
   // Functions
+
+  private ping = () => {
+    // TODO: Pinging system
+  };
 
   private sendRaw = async (
     data: any,
@@ -98,7 +138,7 @@ export default class Connection extends EventEmitter {
 
     if (!!callback) {
       this.awaitCallback.push({ ...data, callback });
-    } else return;
+    }
   };
 
   /**
