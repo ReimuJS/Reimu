@@ -77,18 +77,17 @@ export default class Message {
           return;
       }
     } else {
-    }
+      this.id = decoded.id;
 
-    this.id = decoded.id;
+      switch (decoded.type) {
+        case "message":
+          connection.emit("message", decoded.data);
+          break;
 
-    switch (decoded.type) {
-      case "message":
-        connection.emit("message", decoded.data);
-        break;
-
-      default:
-        connection.disconnect(1002);
-        return;
+        default:
+          connection.disconnect(1002);
+          return;
+      }
     }
   }
 

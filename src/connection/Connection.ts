@@ -37,7 +37,7 @@ export default class Connection extends EventEmitter {
       },
       {
         cb: (data) => {
-          // TODO: check if user sends a resume packet in response and resume
+          // TODO: check if user sends a resume packet in response and resume and set connected = true
         },
         type: "response",
       },
@@ -106,6 +106,7 @@ export default class Connection extends EventEmitter {
    * @param {number} code - The error code
    */
   public disconnect(code: number) {
+    if (this.closeCode) return;
     this.closeCode = code;
     const mId = this.messageId++;
 
