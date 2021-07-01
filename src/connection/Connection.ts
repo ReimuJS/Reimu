@@ -29,14 +29,27 @@ export default class Connection extends EventEmitter {
 
     this.ws.on("close", (code) => {
       this.pingTimer && clearInterval(this.pingTimer);
-      this.emit("close", this.closeCode || code, !!this.closeCode);
+      this.emit("close", this.close?.code || code, !!this.close?.server);
       this.connected = false;
-      if (this.droppedPackets.length > 0 && !this.closeCode)
+      if (this.droppedPackets.length > 0 && !this.close)
         droppedPackets.set(this.id, this.droppedPackets);
     });
 
     this.ws.on("message", (data) => {
-      new Message(data, this);
+      let decoded: any;
+      try {
+        if (typeof data == "string") {
+          this.disconnect(1002);
+          return;
+        }
+        decoded = msgpack.decode(new Uint8Array(data as ArrayBufferLike));
+      } catch (e) {
+        this.disconnect(1002);
+      }
+
+      if (!decoded) return;
+
+      new Message(decoded, this);
     });
 
     this.sendRaw(
@@ -83,8 +96,12 @@ export default class Connection extends EventEmitter {
   private server;
   private pingTimer?: NodeJS.Timeout;
   private ws;
-  private closeCode?: number;
   private messageId: number;
+
+  /**
+   * Close info
+   */
+  public close?: { code: number; server: boolean };
 
   /**
    * The connection id
@@ -146,8 +163,8 @@ export default class Connection extends EventEmitter {
    * @param {number} code - The error code
    */
   public disconnect(code: number) {
-    if (this.closeCode) return;
-    this.closeCode = code;
+    if (this.close) return;
+    this.close = { code, server: true };
     const mId = this.messageId++;
 
     const ifNotAcknoledge = setInterval(() => {

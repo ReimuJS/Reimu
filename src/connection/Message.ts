@@ -1,5 +1,3 @@
-import msgpack, { decode } from "msgpack-lite";
-import WebSocket from "ws";
 import Connection from "./Connection";
 
 export default class Message {
@@ -7,39 +5,37 @@ export default class Message {
    * The Message Class
    * @constructor
    */
-  constructor(data: WebSocket.Data, connection: Connection) {
+  constructor(message: any, connection: Connection) {
     this.connection = connection;
 
-    let decoded: any;
-    try {
-      if (typeof data == "string") {
-        connection.disconnect(1002);
-        return;
-      }
-      decoded = msgpack.decode(new Uint8Array(data as ArrayBufferLike));
-    } catch (e) {
-      connection.disconnect(1002);
-    }
-    if (!decoded) return;
-
-    if (!decoded.type) {
+    if (!message.type) {
       connection.disconnect(1002);
       return;
     }
 
-    this.data = decoded.data;
+    if (message.type == "batch") {
+      if (!Array.isArray(message.data)) connection.disconnect(1002);
+      else {
+        for (const msg of message) {
+          new Message(msg, connection);
+        }
+      }
+      return;
+    }
 
-    if (decoded.id == undefined) {
-      if (!decoded.for) {
+    this.data = message.data;
+
+    if (message.id == undefined) {
+      if (!message.for) {
         connection.disconnect(1002);
         return;
       }
-      this.id = decoded.for;
+      this.id = message.for;
 
-      switch (decoded.type) {
+      switch (message.type) {
         case "acknoledge":
           const droppedPacket = connection.droppedPackets.find(
-            (data) => data.id == decoded.replyFor
+            (data) => data.id == message.replyFor
           );
           if (!droppedPacket) return;
           connection.droppedPackets.splice(
@@ -54,7 +50,7 @@ export default class Message {
       }
 
       const initialMessage = connection.awaitCallback.find(
-        (data) => data.id == decoded.replyFor
+        (data) => data.id == message.replyFor
       );
 
       if (!initialMessage) return;
@@ -62,7 +58,7 @@ export default class Message {
         connection.awaitCallback.indexOf(initialMessage),
         1
       );
-      switch (decoded.type) {
+      switch (message.type) {
         case "acknoledge":
           if (initialMessage.callback.type != "acknoledge") return;
           initialMessage.callback.cb();
@@ -77,11 +73,14 @@ export default class Message {
           return;
       }
     } else {
-      this.id = decoded.id;
+      this.id = message.id;
 
-      switch (decoded.type) {
+      switch (message.type) {
         case "message":
-          connection.emit("message", decoded.data);
+          connection.emit("message", message.data);
+          break;
+        case "close":
+          connection.close = { code: message.data.code, server: false };
           break;
 
         default:
