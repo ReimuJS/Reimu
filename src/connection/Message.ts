@@ -87,6 +87,8 @@ export default class Message {
           connection.disconnect(1002);
           return;
       }
+
+      connection.acknoledge(this);
     }
   }
 

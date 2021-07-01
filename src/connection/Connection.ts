@@ -31,8 +31,9 @@ export default class Connection extends EventEmitter {
       this.pingTimer && clearInterval(this.pingTimer);
       this.emit("close", this.close?.code || code, !!this.close?.server);
       this.connected = false;
-      if (this.droppedPackets.length > 0 && !this.close)
-        droppedPackets.set(this.id, this.droppedPackets);
+      const filtered = this.droppedPackets.filter((packet) => !packet.system);
+      if (filtered.length > 0 && !this.close?.server)
+        droppedPackets.set(this.id, filtered);
     });
 
     this.ws.on("message", (data) => {
@@ -73,10 +74,13 @@ export default class Connection extends EventEmitter {
             )
               pastReconnects.reconnects = 0;
             pastReconnects.reconnects++;
+            pastReconnects.lastReconnect = new Date();
 
             reconnects.set(this.id, pastReconnects);
 
-            // TODO: Send past dropped packets and clear them
+            const dropped = droppedPackets.get(this.id);
+            this.sendRaw({ type: "batch", data: dropped });
+            droppedPackets.delete(this.id);
           } else {
             server.emit("connect", this, request);
           }
@@ -202,13 +206,22 @@ export default class Connection extends EventEmitter {
   }
 
   /**
-   * Responds to the message.
+   * Responds to the message
    * @param {any} data - Data to be sent
    * @param {Message} message - Message Class
    * @returns {void}
    */
   public respond(data: any, message: Message): void {
     this.sendRaw({ for: message.id, type: "response", data });
+  }
+
+  /**
+   * Acknoledges the message
+   * @param {Message} message - Message Class
+   * @returns {void}
+   */
+  public acknoledge(message: Message): void {
+    this.sendRaw({ for: message.id, type: "acknoledge" });
   }
 }
 
