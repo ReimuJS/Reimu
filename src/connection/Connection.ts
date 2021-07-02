@@ -207,11 +207,7 @@ export default class Connection extends EventEmitter {
     this.connected = false;
 
     const filtered = this.droppedPackets.filter((packet) => !packet.system);
-    if (
-      filtered.length > 0 &&
-      this.close &&
-      ["unexpected", "ping"].includes(this.close.server.toString())
-    ) {
+    if (["unexpected", "ping"].includes(this.close.server.toString())) {
       // Prepare for reconnect
       this.emit("reconnecting");
       this.dPM.set(this.id, { connection: this, messages: filtered });
