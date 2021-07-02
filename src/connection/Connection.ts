@@ -66,6 +66,9 @@ export default class Connection extends EventEmitter {
             pastReconnects.reconnects++;
             pastReconnects.lastReconnect = new Date();
 
+            if (pastReconnects.reconnects > server.options.reconnects)
+              return this.disconnect(1003);
+
             reconnects.set(this.id, pastReconnects);
 
             this.pingTimer && clearInterval(this.pingTimer);
@@ -175,9 +178,13 @@ export default class Connection extends EventEmitter {
   };
 
   public reconnect = (ws: WebSocket) => {
+    this.emit("reconnect");
     this.reconnectTimer && clearTimeout(this.reconnectTimer);
 
     this.ws = ws;
+
+    this.connected = true;
+    this.close = undefined;
 
     this.ws.on("close", this.closeListener);
     this.ws.on("message", this.messageListener);
@@ -206,12 +213,15 @@ export default class Connection extends EventEmitter {
       ["unexpected", "ping"].includes(this.close.server.toString())
     ) {
       // Prepare for reconnect
+      this.emit("reconnecting");
       this.dPM.set(this.id, { connection: this, messages: filtered });
 
       this.reconnectTimer = setTimeout(() => {
         this.dPM.delete(this.id);
         this.emit("close", this.close?.code, !!this.close?.server);
       }, this.server.options.reconnectTimeout);
+    } else {
+      this.emit("close", this.close.code, this.close.server);
     }
   };
 
@@ -341,7 +351,10 @@ export default interface WebSocketManager {
   /**
    * Emitted when the connection is closed
    */
-  on(event: "close", callback: (code: number, server: boolean) => void): this;
+  on(
+    event: "close",
+    callback: (code: number, server: boolean | "unexpected" | "ping") => void
+  ): this;
 
   /**
    * Emitted when the connection reconnected
