@@ -47,7 +47,10 @@ export default class Server extends EventEmitter {
   private path: string;
   private serveClient!: boolean;
   private server!: HTTPServer | HTTPSServer;
-  private droppedPackets: Map<string, DecodedMessage[]> = new Map();
+  private droppedPackets: Map<
+    string,
+    { connection: Connection; messages: DecodedMessage[] }
+  > = new Map();
   private reconnects: Map<string, { reconnects: number; lastReconnect: Date }> =
     new Map();
 

@@ -14,7 +14,10 @@ export default class Connection extends EventEmitter {
    */
   constructor(
     ws: WebSocket,
-    droppedPackets: Map<string, DecodedMessage[]>,
+    droppedPackets: Map<
+      string,
+      { connection: Connection; messages: DecodedMessage[] }
+    >,
     reconnects: Map<string, { reconnects: number; lastReconnect: Date }>,
     server: Server,
     request: IncomingMessage
@@ -23,35 +26,19 @@ export default class Connection extends EventEmitter {
 
     this.ws = ws;
     this.id = uniqid();
+    this.dPM = droppedPackets;
     this.messageId = 0;
     this.connected = false;
     this.server = server;
 
-    this.ws.on("close", (code) => {
-      this.pingTimer && clearInterval(this.pingTimer);
-      this.emit("close", this.close?.code || code, !!this.close?.server);
-      this.connected = false;
-      const filtered = this.droppedPackets.filter((packet) => !packet.system);
-      if (filtered.length > 0 && !this.close?.server)
-        droppedPackets.set(this.id, filtered);
-    });
+    this.ws.on("close", this.closeListener);
+    this.ws.on("message", this.messageListener);
 
-    this.ws.on("message", (data) => {
-      let decoded: any;
-      try {
-        if (typeof data == "string") {
-          this.disconnect(1002);
-          return;
-        }
-        decoded = msgpack.decode(new Uint8Array(data as ArrayBufferLike));
-      } catch (e) {
-        this.disconnect(1002);
-      }
+    this.lastContact = { client: new Date(), server: new Date() };
 
-      if (!decoded) return;
-
-      new Message(decoded, this);
-    });
+    this.pingTimer = setInterval(() => {
+      this.ping();
+    }, 500);
 
     this.sendRaw(
       {
@@ -62,6 +49,9 @@ export default class Connection extends EventEmitter {
       {
         cb: (data) => {
           if (data.data.id != this.id) {
+            const dropped = droppedPackets.get(data.data.id);
+            if (!dropped) return this.disconnect(1003);
+
             this.id = data.data.id;
             let pastReconnects = reconnects.get(this.id) || {
               reconnects: 0,
@@ -78,8 +68,16 @@ export default class Connection extends EventEmitter {
 
             reconnects.set(this.id, pastReconnects);
 
-            const dropped = droppedPackets.get(this.id);
-            this.sendRaw({ type: "batch", data: dropped });
+            this.pingTimer && clearInterval(this.pingTimer);
+
+            this.ws.off("close", this.closeListener);
+            this.ws.off("message", this.messageListener);
+
+            this.connected = false;
+
+            dropped.connection.reconnect(this.ws);
+
+            this.sendRaw({ type: "batch", data: dropped.messages });
             droppedPackets.delete(this.id);
           } else {
             server.emit("connect", this, request);
@@ -90,22 +88,26 @@ export default class Connection extends EventEmitter {
       },
       true
     );
-    this.pingTimer = setInterval(() => {
-      this.ping();
-    }, 5000);
   }
 
   // Variables
 
   private server;
   private pingTimer?: NodeJS.Timeout;
+  private reconnectTimer?: NodeJS.Timeout;
   private ws;
+  private dPM;
   private messageId: number;
+
+  /**
+   * Last sent packet
+   */
+  public lastContact: { client: Date; server: Date };
 
   /**
    * Close info
    */
-  public close?: { code: number; server: boolean };
+  public close?: { code: number; server: boolean | "unexpected" | "ping" };
 
   /**
    * The connection id
@@ -126,6 +128,12 @@ export default class Connection extends EventEmitter {
   public droppedPackets: DecodedMessage[] = [];
 
   /**
+   * Packets that are being queued
+   * @type {DecodedMessage[]}
+   */
+  public queue: DecodedMessage[] = [];
+
+  /**
    * Messages that are awaiting callbacks
    * @type {any[]}
    */
@@ -141,8 +149,94 @@ export default class Connection extends EventEmitter {
 
   // Functions
 
+  private closeListener = (code: number) => {
+    !this.close && (this.close = { code: code, server: "unexpected" });
+
+    this.readyReconnect();
+  };
+
+  private messageListener = (data: WebSocket.Data) => {
+    this.lastContact.client = new Date();
+
+    let decoded: any;
+    try {
+      if (typeof data == "string") {
+        this.disconnect(1002);
+        return;
+      }
+      decoded = msgpack.decode(new Uint8Array(data as ArrayBufferLike));
+    } catch (e) {
+      this.disconnect(1002);
+    }
+
+    if (!decoded) return;
+
+    new Message(decoded, this);
+  };
+
+  public reconnect = (ws: WebSocket) => {
+    this.reconnectTimer && clearTimeout(this.reconnectTimer);
+
+    this.ws = ws;
+
+    this.ws.on("close", this.closeListener);
+    this.ws.on("message", this.messageListener);
+
+    this.lastContact = { client: new Date(), server: new Date() };
+
+    this.pingTimer = setInterval(() => {
+      this.ping();
+    }, 500);
+  };
+
+  private readyReconnect = () => {
+    if (!this.close) return;
+
+    this.pingTimer && clearInterval(this.pingTimer);
+
+    this.ws.off("close", this.closeListener);
+    this.ws.off("message", this.messageListener);
+
+    this.connected = false;
+
+    const filtered = this.droppedPackets.filter((packet) => !packet.system);
+    if (
+      filtered.length > 0 &&
+      this.close &&
+      ["unexpected", "ping"].includes(this.close.server.toString())
+    ) {
+      // Prepare for reconnect
+      this.dPM.set(this.id, { connection: this, messages: filtered });
+
+      this.reconnectTimer = setTimeout(() => {
+        this.dPM.delete(this.id);
+        this.emit("close", this.close?.code, !!this.close?.server);
+      }, this.server.options.reconnectTimeout);
+    }
+  };
+
   private ping = () => {
-    // TODO: Pinging system
+    let pingTimeout = this.server.options.pingTimeout;
+
+    if (this.close) {
+      return;
+    }
+
+    // Safely assume a ping would be sent
+    if (
+      new Date().getTime() - this.lastContact.server.getTime() >
+      pingTimeout / 2
+    ) {
+      this.sendRaw({ id: this.messageId++, type: "ping" });
+    } else {
+      // Now, check time between last client send and last server send
+      if (
+        this.lastContact.server.getTime() - this.lastContact.client.getTime() >
+        pingTimeout
+      ) {
+        this.readyReconnect();
+      }
+    }
   };
 
   private sendRaw = async (
@@ -152,14 +246,27 @@ export default class Connection extends EventEmitter {
       | { cb: () => void; type: "acknoledge" },
     system?: boolean
   ) => {
-    const dataEncoded = msgpack.encode(data);
-    this.ws?.send(dataEncoded);
+    if (data.type != "batch") {
+      this.droppedPackets.push({ ...data, system: !!system });
 
-    this.droppedPackets.push({ ...data, system: !!system });
+      if (!!callback) {
+        this.awaitCallback.push({ ...data, callback });
+      }
 
-    if (!!callback) {
-      this.awaitCallback.push({ ...data, callback });
+      if (this.ws.bufferedAmount > 512) {
+        this.queue.push({ ...data, system: !!system });
+        return;
+      }
     }
+
+    if (!this.connected) {
+      this.queue.push({ ...data, system: !!system });
+      return;
+    }
+
+    const dataEncoded = msgpack.encode(data);
+    this.lastContact.server = new Date();
+    this.ws?.send(dataEncoded);
   };
 
   /**
@@ -235,4 +342,14 @@ export default interface WebSocketManager {
    * Emitted when the connection is closed
    */
   on(event: "close", callback: (code: number, server: boolean) => void): this;
+
+  /**
+   * Emitted when the connection reconnected
+   */
+  on(event: "reconnect", callback: () => void): this;
+
+  /**
+   * Emitted when the connection is reconnecting
+   */
+  on(event: "reconnecting", callback: () => void): this;
 }
