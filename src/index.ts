@@ -1,12 +1,18 @@
-import Server from "./Server";
+import Reimu, { options } from "./Reimu";
 import Connection from "./connection/Connection";
-import Message from "./connection/Message";
 
-export { Server, Connection, Message };
+export { Reimu, options, Connection };
 
-export interface DecodedMessage {
+export interface DecodedMessage<MessageTypes> {
   id: number;
-  type: string;
-  data: any;
-  system: boolean;
+  type: rawTypes;
+  data: MessageTypes;
 }
+
+export enum rawTypes {
+  ACK,
+  UDATA,
+  URES,
+}
+
+export enum closeReason {}

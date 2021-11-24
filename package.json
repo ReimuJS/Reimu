@@ -1,7 +1,7 @@
 {
   "name": "reimu",
-  "version": "0.0.0",
-  "description": "Simple and reliable real-time bidirectional communication",
+  "version": "0.1.0",
+  "description": "Simple and reliable real-time bidirectional communication using uWebSockets.js",
   "main": "dist/server/index.js",
   "scripts": {
     "build": "rm -rf dist/ && tsc",
@@ -20,7 +20,9 @@
     "realtime",
     "real-time",
     "ws",
-    "websocket"
+    "websocket",
+    "uWebSockets.js",
+    "uws"
   ],
   "license": "MIT",
   "bugs": {
@@ -33,18 +35,16 @@
     }
   },
   "dependencies": {
-    "@types/msgpack-lite": "^0.1.7",
-    "@types/node": "^15.12.4",
-    "@types/uniqid": "^5.3.0",
-    "@types/ws": "^7.4.5",
-    "fs": "^0.0.1-security",
-    "msgpack-lite": "^0.1.26",
-    "uniqid": "^5.3.0",
-    "ws": "^7.5.0"
+    "@types/node": "^16.10.2",
+    "cuid": "^2.1.8",
+    "msgpackr": "^1.5.1",
+    "sializer": "^0.1.1",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.0.0"
   },
   "devDependencies": {
+    "commitizen": "^4.2.4",
     "cz-conventional-changelog": "^3.3.0",
-    "semantic-release": "^17.4.4",
-    "typescript": "^4.3.4"
+    "semantic-release": "^18.0.0",
+    "typescript": "^4.4.3"
   }
 }
