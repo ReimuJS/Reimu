@@ -1,9 +1,11 @@
-import { WebSocketBehavior, CompressOptions } from "uWebSockets.js";
+import { WebSocketBehavior, CompressOptions, WebSocket } from "uWebSockets.js";
 import { closeReason, numToHex, rawTypes } from ".";
 import createConnection, { Connection } from "./connection/Connection";
 import createMessage, { Message } from "./message/Message";
 import cuid from "cuid";
-import { decodeRawMessage } from "./message";
+import { decodeRawMessage, messageDecoded } from "./message";
+import { unpack } from "msgpackr";
+import { createBufferMessage } from "./connection/Connection";
 
 export default function <MessageType>(
   options: Partial<options<MessageType>>
@@ -49,22 +51,36 @@ export default function <MessageType>(
           return ws.end(1002, "Invalid ID");
         }
       } else {
+        const conn: Connection<MessageType> = ws.conn;
         // Connection Assigned
         const decoded = decodeRawMessage(raw);
         if (Array.isArray(decoded)) {
+          let bufferSend: Buffer | false = Buffer.from([rawTypes.UBUF]);
+          decoded.some((message) => {
+            try {
+              const output = handleMessage(message, ws);
+              if (output && bufferSend) {
+                bufferSend = createBufferMessage(bufferSend, output);
+              }
+              return false;
+            } catch (e) {
+              conn.expectedClose = true;
+              ws.end(1002, "Invalid Message");
+              return true;
+            }
+          });
+          if (bufferSend) {
+            conn.sendRaw(bufferSend);
+          }
         } else {
-          switch (decoded.type) {
-            case rawTypes.ACK:
-              break;
-            case rawTypes.UDATA:
-              opts.message &&
-                opts.message(
-                  ws.conn,
-                  createMessage(ws.conn, decoded.id, decoded.data)
-                );
-              break;
-            case rawTypes.URES:
-              break;
+          try {
+            const output = handleMessage(decoded, ws);
+            if (output) {
+              conn.sendRaw(output);
+            }
+          } catch (e) {
+            conn.expectedClose = true;
+            ws.end(1002, "Invalid Message");
           }
         }
       }
@@ -78,13 +94,46 @@ export default function <MessageType>(
     },
     close: (ws, code, message) => {
       switch (code) {
+        case 1002:
+          ws.conn.disconnected = new Date().getTime();
+          opts.disconnect && opts.disconnect(ws.conn);
+          break;
         case 1006:
           ws.conn.disconnected = new Date().getTime();
-          options.disconnect && options.disconnect(ws.conn);
+          opts.disconnect && opts.disconnect(ws.conn);
           break;
       }
     },
   };
+  function handleMessage(
+    decoded: messageDecoded,
+    ws: WebSocket
+  ): Buffer | void {
+    switch (decoded.type) {
+      case rawTypes.ACK:
+        break;
+      case rawTypes.UDATA: {
+        if (opts.message) {
+          const message = createMessage<MessageType>(
+            ws.conn,
+            decoded.id,
+            decoded.data
+          );
+          opts.message(ws.conn, message);
+        }
+        return createAckMessage(decoded.id, rawTypes.UDATA);
+      }
+      case rawTypes.URES: {
+        const conn: Connection<MessageType> = ws.conn;
+        const replyHandler = conn.replyHandlers.find((r) => r.id == decoded.id);
+        if (replyHandler) {
+          const data = unpack(decoded.data);
+          replyHandler.handler(data);
+        }
+        return createAckMessage(decoded.id, rawTypes.URES);
+      }
+    }
+  }
 }
 
 function createAckMessage(id: number, to: rawTypes) {

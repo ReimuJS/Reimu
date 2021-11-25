@@ -29,7 +29,7 @@ export default function createConnection<MessageType>(
       awaitingData = createBufferMessage(awaitingData, packedMessage);
     }
   }
-  let replyHandlers: { handler: (message: any) => any }[] = [];
+  let replyHandlers: { id: number; handler: (message: any) => any }[] = [];
 
   return {
     ws,
@@ -46,14 +46,15 @@ export default function createConnection<MessageType>(
     sendRaw,
 
     send: (data, onReply) => {
+      const id = currentMessageId++;
       const message = Buffer.concat([
         Buffer.from([rawTypes.UDATA]),
-        numToHex(currentMessageId++),
+        numToHex(id),
         pack(data),
       ]);
       sendRaw(message);
 
-      onReply && replyHandlers.push({ handler: onReply });
+      onReply && replyHandlers.push({ id, handler: onReply });
     },
 
     reply: (originalMessage, data) => {
@@ -81,7 +82,7 @@ export interface Connection<MessageType> {
   /** Array of bufferred data awaiting backpressure to be drained . */
   awaitingData: Buffer;
   /** Array of reply handlers. */
-  replyHandlers: { handler: (message: any) => any }[];
+  replyHandlers: { id: number; handler: (message: any) => any }[];
 
   /** The current Message id. */
   currentMessageId: number;
