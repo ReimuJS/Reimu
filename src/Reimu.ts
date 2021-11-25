@@ -109,26 +109,40 @@ export default function <MessageType>(
     decoded: messageDecoded,
     ws: WebSocket
   ): Buffer | void {
+    const conn: Connection<MessageType> = ws.conn;
     switch (decoded.type) {
       case rawTypes.ACK:
+        {
+          const i = conn.acknoledgeList.out[decoded.to].indexOf(decoded.id);
+          if (i > -1) {
+            conn.acknoledgeList.out[decoded.to].splice(i, 1);
+          }
+        }
         break;
       case rawTypes.UDATA: {
-        if (opts.message) {
-          const message = createMessage<MessageType>(
-            ws.conn,
-            decoded.id,
-            decoded.data
-          );
-          opts.message(ws.conn, message);
+        if (!conn.acknoledgeList.in[decoded.type].includes(decoded.id)) {
+          if (opts.message) {
+            const message = createMessage<MessageType>(
+              ws.conn,
+              decoded.id,
+              decoded.data
+            );
+            opts.message(ws.conn, message);
+          }
+          conn.acknoledgeList.in[decoded.type].push(decoded.id);
         }
         return createAckMessage(decoded.id, rawTypes.UDATA);
       }
       case rawTypes.URES: {
-        const conn: Connection<MessageType> = ws.conn;
-        const replyHandler = conn.replyHandlers.find((r) => r.id == decoded.id);
-        if (replyHandler) {
-          const data = unpack(decoded.data);
-          replyHandler.handler(data);
+        if (!conn.acknoledgeList.in[decoded.type].includes(decoded.id)) {
+          const replyHandler = conn.replyHandlers.find(
+            (r) => r.id == decoded.id
+          );
+          if (replyHandler) {
+            const data = unpack(decoded.data);
+            replyHandler.handler(data);
+          }
+          conn.acknoledgeList.in[decoded.type].push(decoded.id);
         }
         return createAckMessage(decoded.id, rawTypes.URES);
       }

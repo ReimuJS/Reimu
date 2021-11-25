@@ -31,12 +31,25 @@ export default function createConnection<MessageType>(
   }
   let replyHandlers: { id: number; handler: (message: any) => any }[] = [];
 
+  let acknoledgeList = {
+    in: {
+      [rawTypes.UDATA]: [],
+      [rawTypes.URES]: [],
+    },
+    out: {
+      [rawTypes.UDATA]: [],
+      [rawTypes.URES]: [],
+    },
+  };
+
   return {
     ws,
 
     id: cuid(),
     disconnected: -1,
     expectedClose: false,
+
+    acknoledgeList,
 
     currentMessageId,
 
@@ -79,6 +92,11 @@ export interface Connection<MessageType> {
   /** If the server expected this to close (aka server closed it). */
   expectedClose: boolean;
 
+  /** List of outgoing ids waiting to be acknoledged and inboung ids already acknoledged. */
+  acknoledgeList: {
+    in: Record<rawTypes.UDATA | rawTypes.URES, number[]>;
+    out: Record<rawTypes.UDATA | rawTypes.URES, number[]>;
+  };
   /** Array of bufferred data awaiting backpressure to be drained . */
   awaitingData: Buffer;
   /** Array of reply handlers. */
