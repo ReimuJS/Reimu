@@ -1,14 +1,15 @@
 import { Connection } from "../connection/Connection";
 import { unpack } from "msgpackr";
 
-export default function createMessage<MessageType, ReplyType>(
-  connection: Connection<MessageType, ReplyType>,
-  rawMessage: ArrayBuffer
+export default function createMessage<MessageType>(
+  connection: Connection<MessageType>,
+  id: number,
+  rawMessage: Buffer
 ): Message<MessageType> {
-  const messageUnpacked = unpack(Buffer.from(rawMessage));
+  const messageUnpacked = unpack(rawMessage);
   const message: Message<MessageType> = {
-    id: messageUnpacked.id,
-    data: messageUnpacked.data,
+    id,
+    data: messageUnpacked,
 
     reply: (reply: any) => {
       connection.reply(message, reply);

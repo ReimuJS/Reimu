@@ -1,19 +1,20 @@
 import { WebSocketBehavior, CompressOptions } from "uWebSockets.js";
-import { closeReason, rawTypes } from ".";
+import { closeReason, numToHex, rawTypes } from ".";
 import createConnection, { Connection } from "./connection/Connection";
 import createMessage, { Message } from "./message/Message";
 import cuid from "cuid";
+import { decodeRawMessage } from "./message";
 
-export default function <MessageType, ReplyType>(
-  options: Partial<options<MessageType, ReplyType>>
+export default function <MessageType>(
+  options: Partial<options<MessageType>>
 ): WebSocketBehavior {
-  const opts: options<MessageType, ReplyType> = {
+  const opts: options<MessageType> = {
     reconnectTimeout: 40,
     pruneStaleConnection: 60,
     ...options,
   };
 
-  const connections: Connection<MessageType, ReplyType>[] = [];
+  const connections: Connection<MessageType>[] = [];
 
   return {
     compression: opts.compression,
@@ -49,15 +50,28 @@ export default function <MessageType, ReplyType>(
         }
       } else {
         // Connection Assigned
-        if (opts.message) {
-          const message = createMessage<MessageType, ReplyType>(ws.conn, raw);
-          opts.message(ws.conn, message);
+        const decoded = decodeRawMessage(raw);
+        if (Array.isArray(decoded)) {
+        } else {
+          switch (decoded.type) {
+            case rawTypes.ACK:
+              break;
+            case rawTypes.UDATA:
+              opts.message &&
+                opts.message(
+                  ws.conn,
+                  createMessage(ws.conn, decoded.id, decoded.data)
+                );
+              break;
+            case rawTypes.URES:
+              break;
+          }
         }
       }
     },
     drain: (ws) => {
       if (ws.conn && ws.getBufferedAmount() < 512) {
-        const conn: Connection<MessageType, ReplyType> = ws.conn;
+        const conn: Connection<MessageType> = ws.conn;
         conn.sendRaw(conn.awaitingData);
         conn.awaitingData = Buffer.from([rawTypes.UBUF]);
       }
@@ -73,28 +87,29 @@ export default function <MessageType, ReplyType>(
   };
 }
 
-export interface options<MessageType, ReplyType> {
+function createAckMessage(id: number, to: rawTypes) {
+  return Buffer.concat([Buffer.from([rawTypes.ACK, to]), numToHex(id)]);
+}
+
+export interface options<MessageType> {
   /** Maximum time in seconds that a client can be disconnected before it will no longer be allowed to reconnect. Defaults to 40. */
   reconnectTimeout: number;
   /** Time in seconds to check for stale connections and prune them. Defaults to 60. */
   pruneStaleConnection: number;
 
   /** Handler for new Connection. */
-  open?: (connection: Connection<MessageType, ReplyType>) => any;
+  open?: (connection: Connection<MessageType>) => any;
   /** Handler for new Message. */
   message?: (
-    connection: Connection<MessageType, ReplyType>,
+    connection: Connection<MessageType>,
     message: Message<MessageType>
   ) => any;
   /** Handler for disconnection due to ping timeout (reconnects still allowed). */
-  disconnect?: (connection: Connection<MessageType, ReplyType>) => any;
+  disconnect?: (connection: Connection<MessageType>) => any;
   /** Handler for reconnection. */
-  reconnect?: (connection: Connection<MessageType, ReplyType>) => any;
+  reconnect?: (connection: Connection<MessageType>) => any;
   /** Handler for close event. */
-  close?: (
-    connection: Connection<MessageType, ReplyType>,
-    reason: closeReason
-  ) => any;
+  close?: (connection: Connection<MessageType>, reason: ArrayBuffer) => any;
 
   /** What permessage-deflate compression to use. uWS.DISABLED, uWS.SHARED_COMPRESSOR or any of the uWS.DEDICATED_COMPRESSOR_xxxKB. Defaults to uWS.DISABLED. */
   compression?: CompressOptions;

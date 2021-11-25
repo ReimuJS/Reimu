@@ -17,3 +17,12 @@ export enum rawTypes {
 }
 
 export enum closeReason {}
+
+export function numToHex(num: number): Buffer {
+  let hex = num.toString(16);
+  if (hex.length % 2) {
+    hex = "0" + hex;
+  }
+  const numHex = Buffer.from(hex, "hex");
+  return Buffer.concat([Buffer.from([numHex.length - 1]), numHex]);
+}

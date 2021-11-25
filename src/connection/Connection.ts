@@ -1,21 +1,23 @@
 import cuid from "cuid";
 import { WebSocket } from "uWebSockets.js";
 import { Message } from "../message/Message";
-import { rawTypes } from "../index";
+import { numToHex, rawTypes } from "../index";
 import { pack } from "msgpackr";
 
-function numToHex(num: number): Buffer {
-  let hex = num.toString(16);
-  if (hex.length % 2) {
-    hex = "0" + hex;
-  }
-  const numHex = Buffer.from(hex, "hex");
-  return Buffer.concat([Buffer.from([numHex.length - 1]), numHex]);
+export function createBufferMessage(
+  starting: Buffer,
+  packedMessage: Buffer
+): Buffer {
+  return Buffer.concat([
+    starting,
+    numToHex(packedMessage.length - 1),
+    packedMessage,
+  ]);
 }
 
-export default function createConnection<MessageType, ReplyType>(
+export default function createConnection<MessageType>(
   ws: WebSocket
-): Connection<MessageType, ReplyType> {
+): Connection<MessageType> {
   let currentMessageId = 0;
 
   let awaitingData: Buffer = Buffer.from([rawTypes.UBUF]);
@@ -24,20 +26,22 @@ export default function createConnection<MessageType, ReplyType>(
     if (ws.getBufferedAmount() < 512) {
       ws.send(packedMessage, true);
     } else {
-      awaitingData = Buffer.concat([
-        awaitingData,
-        numToHex(packedMessage.length - 1),
-        packedMessage,
-      ]);
+      awaitingData = createBufferMessage(awaitingData, packedMessage);
     }
   }
-  let onReplyList: ((message: ReplyType) => any)[] = [];
+  let replyHandlers: { handler: (message: any) => any }[] = [];
 
   return {
+    ws,
+
     id: cuid(),
     disconnected: -1,
+    expectedClose: false,
+
     currentMessageId,
+
     awaitingData,
+    replyHandlers,
 
     sendRaw,
 
@@ -49,7 +53,7 @@ export default function createConnection<MessageType, ReplyType>(
       ]);
       sendRaw(message);
 
-      onReply && onReplyList.push(onReply);
+      onReply && replyHandlers.push({ handler: onReply });
     },
 
     reply: (originalMessage, data) => {
@@ -63,14 +67,21 @@ export default function createConnection<MessageType, ReplyType>(
   };
 }
 
-export interface Connection<MessageType, ReplyType> {
+export interface Connection<MessageType> {
+  /** The raw websocket. */
+  ws: WebSocket;
+
   /** The connection id. */
   id: string;
   /** Unix time value (or -1 if connected). */
   disconnected: number;
+  /** If the server expected this to close (aka server closed it). */
+  expectedClose: boolean;
 
   /** Array of bufferred data awaiting backpressure to be drained . */
   awaitingData: Buffer;
+  /** Array of reply handlers. */
+  replyHandlers: { handler: (message: any) => any }[];
 
   /** The current Message id. */
   currentMessageId: number;
@@ -78,7 +89,7 @@ export interface Connection<MessageType, ReplyType> {
   /** Sends a raw message. */
   sendRaw: (packedMessage: Buffer) => void;
   /** Send a message. */
-  send: (data: MessageType, onReply?: (message: ReplyType) => any) => void;
+  send: (data: MessageType, onReply?: (message: any) => any) => void;
   /** Send a reply. */
   reply(originalMessage: Message<MessageType>, data: any): void;
 
