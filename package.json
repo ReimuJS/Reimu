@@ -35,14 +35,14 @@
     }
   },
   "dependencies": {
-    "@types/node": "^16.10.2",
+    "@types/node": "^16.11.10",
     "cuid": "^2.1.8",
     "msgpackr": "^1.5.1"
   },
   "devDependencies": {
     "commitizen": "^4.2.4",
     "cz-conventional-changelog": "^3.3.0",
-    "semantic-release": "^18.0.0",
+    "semantic-release": "18.0.1",
     "typescript": "^4.4.3",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.4.0"
   }

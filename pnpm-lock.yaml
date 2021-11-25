@@ -1,24 +1,24 @@
 lockfileVersion: 5.3
 
 specifiers:
-  '@types/node': ^16.10.2
+  '@types/node': ^16.11.10
   commitizen: ^4.2.4
   cuid: ^2.1.8
   cz-conventional-changelog: ^3.3.0
   msgpackr: ^1.5.1
-  semantic-release: ^18.0.0
+  semantic-release: 18.0.1
   typescript: ^4.4.3
   uWebSockets.js: github:uNetworking/uWebSockets.js#v20.4.0
 
 dependencies:
-  '@types/node': 16.10.2
+  '@types/node': 16.11.10
   cuid: 2.1.8
   msgpackr: 1.5.1
 
 devDependencies:
-  commitizen: 4.2.4_typescript@4.4.3
-  cz-conventional-changelog: 3.3.0_typescript@4.4.3
-  semantic-release: 18.0.0
+  commitizen: 4.2.4
+  cz-conventional-changelog: 3.3.0
+  semantic-release: 18.0.1
   typescript: 4.4.3
   uWebSockets.js: github.com/uNetworking/uWebSockets.js/65f39bdff763be3883e6cf18e433dd4fec155845
 
@@ -45,32 +45,31 @@ packages:
       js-tokens: 4.0.0
     dev: true
 
-  /@commitlint/execute-rule/13.2.0:
-    resolution: {integrity: sha512-6nPwpN0hwTYmsH3WM4hCdN+NrMopgRIuQ0aqZa+jnwMoS/g6ljliQNYfL+m5WO306BaIu1W3yYpbW5aI8gEr0g==}
+  /@commitlint/execute-rule/15.0.0:
+    resolution: {integrity: sha512-pyE4ApxjbWhb1TXz5vRiGwI2ssdMMgZbaaheZq1/7WC0xRnqnIhE1yUC1D2q20qPtvkZPstTYvMiRVtF+DvjUg==}
     engines: {node: '>=v12'}
     dev: true
     optional: true
 
-  /@commitlint/load/13.2.0_typescript@4.4.3:
-    resolution: {integrity: sha512-Nhkv+hwWCCxWGjmE9jd1U8kfGGCkZVpwzlTtdKxpY+Aj2VCFg3BjY+qA81pMF3oAsIpxchSaZG5llb8kduVjYg==}
+  /@commitlint/load/15.0.0:
+    resolution: {integrity: sha512-Ak1YPeOhvxmY3ioe0o6m1yLGvUAYb4BdfGgShU8jiTCmU3Mnmms0Xh/kfQz8AybhezCC3AmVTyBLaBZxOHR8kg==}
     engines: {node: '>=v12'}
     requiresBuild: true
     dependencies:
-      '@commitlint/execute-rule': 13.2.0
-      '@commitlint/resolve-extends': 13.2.0
-      '@commitlint/types': 13.2.0
+      '@commitlint/execute-rule': 15.0.0
+      '@commitlint/resolve-extends': 15.0.0
+      '@commitlint/types': 15.0.0
       '@endemolshinegroup/cosmiconfig-typescript-loader': 3.0.2_4b317b069e4dad36c8619feea2045a32
       chalk: 4.1.2
       cosmiconfig: 7.0.1
       lodash: 4.17.21
       resolve-from: 5.0.0
-    transitivePeerDependencies:
-      - typescript
+      typescript: 4.4.3
     dev: true
     optional: true
 
-  /@commitlint/resolve-extends/13.2.0:
-    resolution: {integrity: sha512-HLCMkqMKtvl1yYLZ1Pm0UpFvd0kYjsm1meLOGZ7VkOd9G/XX+Fr1S2G5AT2zeiDw7WUVYK8lGVMNa319bnV+aw==}
+  /@commitlint/resolve-extends/15.0.0:
+    resolution: {integrity: sha512-7apfRJjgJsKja7lHsPfEFixKjA/fk/UeD3owkOw1174yYu4u8xBDLSeU3IinGPdMuF9m245eX8wo7vLUy+EBSg==}
     engines: {node: '>=v12'}
     dependencies:
       import-fresh: 3.3.0
@@ -80,8 +79,8 @@ packages:
     dev: true
     optional: true
 
-  /@commitlint/types/13.2.0:
-    resolution: {integrity: sha512-RRVHEqmk1qn/dIaSQhvuca6k/6Z54G+r/KyimZ8gnAFielGiGUpsFRhIY3qhd5rXClVxDaa3nlcyTWckSccotQ==}
+  /@commitlint/types/15.0.0:
+    resolution: {integrity: sha512-OMSLX+QJnyNoTwws54ULv9sOvuw9GdVezln76oyUd4YbMMJyaav62aSXDuCdWyL2sm9hTkSzyEi52PNaIj/vqw==}
     engines: {node: '>=v12'}
     dependencies:
       chalk: 4.1.2
@@ -224,20 +223,20 @@ packages:
       '@octokit/openapi-types': 10.6.4
     dev: true
 
-  /@semantic-release/commit-analyzer/9.0.1_semantic-release@18.0.0:
-    resolution: {integrity: sha512-ncNsnrLmiykhgNZUXNvhhAjNN0me7VGIb0X5hu3ogyi5DDPapjGAHdEffO5vi+HX1BFWLRD/Ximx5PjGAKjAqQ==}
+  /@semantic-release/commit-analyzer/9.0.2_semantic-release@18.0.1:
+    resolution: {integrity: sha512-E+dr6L+xIHZkX4zNMe6Rnwg4YQrWNXK+rNsvwOPpdFppvZO1olE2fIgWhv89TkQErygevbjsZFSIxp+u6w2e5g==}
     engines: {node: '>=14.17'}
     peerDependencies:
       semantic-release: '>=18.0.0-beta.1'
     dependencies:
       conventional-changelog-angular: 5.0.13
       conventional-commits-filter: 2.0.7
-      conventional-commits-parser: 3.2.2
+      conventional-commits-parser: 3.2.3
       debug: 4.3.2
       import-from: 4.0.0
       lodash: 4.17.21
       micromatch: 4.0.4
-      semantic-release: 18.0.0
+      semantic-release: 18.0.1
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -251,7 +250,7 @@ packages:
     engines: {node: '>=14.17'}
     dev: true
 
-  /@semantic-release/github/8.0.1_semantic-release@18.0.0:
+  /@semantic-release/github/8.0.1_semantic-release@18.0.1:
     resolution: {integrity: sha512-T01lfh4yBZodAeo8t0U+W5hmPYR9BdnfwLDerXnGaYeLXm8+KMx4mQEBAf/UbRVlzmIKTqMx+/s9fY/mSQNV0A==}
     engines: {node: '>=14.17'}
     peerDependencies:
@@ -272,13 +271,13 @@ packages:
       mime: 2.5.2
       p-filter: 2.1.0
       p-retry: 4.6.1
-      semantic-release: 18.0.0
+      semantic-release: 18.0.1
       url-join: 4.0.1
     transitivePeerDependencies:
       - supports-color
     dev: true
 
-  /@semantic-release/npm/8.0.0_semantic-release@18.0.0:
+  /@semantic-release/npm/8.0.0_semantic-release@18.0.1:
     resolution: {integrity: sha512-MAlynjIaN5XwBEzsq3xbZ8I+riD9zhLvpPqGCPaZ0j/ySbR0Sg3YG1MYv03fC1aygPFFC5RwefMxKids9llvDg==}
     engines: {node: '>=14.17'}
     peerDependencies:
@@ -295,12 +294,12 @@ packages:
       rc: 1.2.8
       read-pkg: 5.2.0
       registry-auth-token: 4.2.1
-      semantic-release: 18.0.0
+      semantic-release: 18.0.1
       semver: 7.3.5
       tempy: 1.0.1
     dev: true
 
-  /@semantic-release/release-notes-generator/10.0.2_semantic-release@18.0.0:
+  /@semantic-release/release-notes-generator/10.0.2_semantic-release@18.0.1:
     resolution: {integrity: sha512-I4eavIcDan8fNQHskZ2cbWkFMimvgxNkqR2UfuYNwYBgswEl3SJsN8XMf9gZWObt6nXDc2QfDwhjy8DjTZqS3w==}
     engines: {node: '>=14.17'}
     peerDependencies:
@@ -309,14 +308,14 @@ packages:
       conventional-changelog-angular: 5.0.13
       conventional-changelog-writer: 5.0.0
       conventional-commits-filter: 2.0.7
-      conventional-commits-parser: 3.2.2
+      conventional-commits-parser: 3.2.3
       debug: 4.3.2
       get-stream: 6.0.1
       import-from: 4.0.0
       into-stream: 6.0.0
       lodash: 4.17.21
       read-pkg-up: 7.0.1
-      semantic-release: 18.0.0
+      semantic-release: 18.0.1
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -330,8 +329,8 @@ packages:
     resolution: {integrity: sha512-jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==}
     dev: true
 
-  /@types/node/16.10.2:
-    resolution: {integrity: sha512-zCclL4/rx+W5SQTzFs9wyvvyCwoK9QtBpratqz2IYJ3O8Umrn0m3nsTv0wQBk9sRGpvUe9CwPDrQFB10f1FIjQ==}
+  /@types/node/16.11.10:
+    resolution: {integrity: sha512-3aRnHa1KlOEEhJ6+CvyHKK5vE9BcLGjtUpwvqYLRvYNQKMfabu3BwfJaA/SLW8dxe28LsNDjtHwePTuzn3gmOA==}
     dev: false
 
   /@types/normalize-package-data/2.4.1:
@@ -585,13 +584,13 @@ packages:
     dev: true
     optional: true
 
-  /commitizen/4.2.4_typescript@4.4.3:
+  /commitizen/4.2.4:
     resolution: {integrity: sha512-LlZChbDzg3Ir3O2S7jSo/cgWp5/QwylQVr59K4xayVq8S4/RdKzSyJkghAiZZHfhh5t4pxunUoyeg0ml1q/7aw==}
     engines: {node: '>= 10'}
     hasBin: true
     dependencies:
       cachedir: 2.2.0
-      cz-conventional-changelog: 3.2.0_typescript@4.4.3
+      cz-conventional-changelog: 3.2.0
       dedent: 0.7.0
       detect-indent: 6.0.0
       find-node-modules: 2.1.2
@@ -604,8 +603,6 @@ packages:
       minimist: 1.2.5
       strip-bom: 4.0.0
       strip-json-comments: 3.0.1
-    transitivePeerDependencies:
-      - typescript
     dev: true
 
   /compare-func/2.0.0:
@@ -655,8 +652,8 @@ packages:
       modify-values: 1.0.1
     dev: true
 
-  /conventional-commits-parser/3.2.2:
-    resolution: {integrity: sha512-Jr9KAKgqAkwXMRHjxDwO/zOCDKod1XdAESHAGuJX38iZ7ZzVti/tvVoysO0suMsdAObp9NQ2rHSsSbnAqZ5f5g==}
+  /conventional-commits-parser/3.2.3:
+    resolution: {integrity: sha512-YyRDR7On9H07ICFpRm/igcdjIqebXbvf4Cff+Pf0BrBys1i1EOzx9iFXNlAbdrLAR8jf7bkUYkDAr8pEy0q4Pw==}
     engines: {node: '>=10'}
     hasBin: true
     dependencies:
@@ -706,36 +703,32 @@ packages:
     resolution: {integrity: sha512-xiEMER6E7TlTPnDxrM4eRiC6TRgjNX9xzEZ5U/Se2YJKr7Mq4pJn/2XEHjl3STcSh96GmkHPcBXLES8M29wyyg==}
     dev: false
 
-  /cz-conventional-changelog/3.2.0_typescript@4.4.3:
+  /cz-conventional-changelog/3.2.0:
     resolution: {integrity: sha512-yAYxeGpVi27hqIilG1nh4A9Bnx4J3Ov+eXy4koL3drrR+IO9GaWPsKjik20ht608Asqi8TQPf0mczhEeyAtMzg==}
     engines: {node: '>= 10'}
     dependencies:
       chalk: 2.4.2
-      commitizen: 4.2.4_typescript@4.4.3
+      commitizen: 4.2.4
       conventional-commit-types: 3.0.0
       lodash.map: 4.6.0
       longest: 2.0.1
       word-wrap: 1.2.3
     optionalDependencies:
-      '@commitlint/load': 13.2.0_typescript@4.4.3
-    transitivePeerDependencies:
-      - typescript
+      '@commitlint/load': 15.0.0
     dev: true
 
-  /cz-conventional-changelog/3.3.0_typescript@4.4.3:
+  /cz-conventional-changelog/3.3.0:
     resolution: {integrity: sha512-U466fIzU5U22eES5lTNiNbZ+d8dfcHcssH4o7QsdWaCcRs/feIPCxKYSWkYBNs5mny7MvEfwpTLWjvbm94hecw==}
     engines: {node: '>= 10'}
     dependencies:
       chalk: 2.4.2
-      commitizen: 4.2.4_typescript@4.4.3
+      commitizen: 4.2.4
       conventional-commit-types: 3.0.0
       lodash.map: 4.6.0
       longest: 2.0.1
       word-wrap: 1.2.3
     optionalDependencies:
-      '@commitlint/load': 13.2.0_typescript@4.4.3
-    transitivePeerDependencies:
-      - typescript
+      '@commitlint/load': 15.0.0
     dev: true
 
   /dateformat/3.0.3:
@@ -1141,7 +1134,7 @@ packages:
       source-map: 0.6.1
       wordwrap: 1.0.0
     optionalDependencies:
-      uglify-js: 3.14.2
+      uglify-js: 3.14.3
     dev: true
 
   /hard-rejection/2.1.0:
@@ -2173,16 +2166,16 @@ packages:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
     dev: true
 
-  /semantic-release/18.0.0:
-    resolution: {integrity: sha512-/Szyhq5DTZCYry/aZqpBbK/kqv10ydn6oiiaYOXtPgDbAIkqidZcQOm+mfYFJ0sBTUaOYCKMlcPMgJycP7jDYQ==}
+  /semantic-release/18.0.1:
+    resolution: {integrity: sha512-xTdKCaEnCzHr+Fqyhg/5I8P9pvY9z7WHa8TFCYIwcdPbuzAtQShOTzw3VNPsqBT+Yq1kFyBQFBKBYkGOlqWmfA==}
     engines: {node: '>=14.17'}
     hasBin: true
     dependencies:
-      '@semantic-release/commit-analyzer': 9.0.1_semantic-release@18.0.0
+      '@semantic-release/commit-analyzer': 9.0.2_semantic-release@18.0.1
       '@semantic-release/error': 3.0.0
-      '@semantic-release/github': 8.0.1_semantic-release@18.0.0
-      '@semantic-release/npm': 8.0.0_semantic-release@18.0.0
-      '@semantic-release/release-notes-generator': 10.0.2_semantic-release@18.0.0
+      '@semantic-release/github': 8.0.1_semantic-release@18.0.1
+      '@semantic-release/npm': 8.0.0_semantic-release@18.0.1
+      '@semantic-release/release-notes-generator': 10.0.2_semantic-release@18.0.1
       aggregate-error: 3.1.0
       cosmiconfig: 7.0.1
       debug: 4.3.2
@@ -2560,8 +2553,8 @@ packages:
     hasBin: true
     dev: true
 
-  /uglify-js/3.14.2:
-    resolution: {integrity: sha512-rtPMlmcO4agTUfz10CbgJ1k6UAoXM2gWb3GoMPPZB/+/Ackf8lNWk11K4rYi2D0apgoFRLtQOZhb+/iGNJq26A==}
+  /uglify-js/3.14.3:
+    resolution: {integrity: sha512-mic3aOdiq01DuSVx0TseaEzMIVqebMZ0Z3vaeDhFEh9bsc24hV1TFvN74reA2vs08D0ZWfNjAcJ3UbVLaBss+g==}
     engines: {node: '>=0.8.0'}
     hasBin: true
     requiresBuild: true
