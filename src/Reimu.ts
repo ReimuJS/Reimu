@@ -1,5 +1,5 @@
 import { WebSocketBehavior, CompressOptions } from "uWebSockets.js";
-import { closeReason } from ".";
+import { closeReason, rawTypes } from ".";
 import createConnection, { Connection } from "./connection/Connection";
 import createMessage, { Message } from "./message/Message";
 import cuid from "cuid";
@@ -53,6 +53,13 @@ export default function <MessageType, ReplyType>(
           const message = createMessage<MessageType, ReplyType>(ws.conn, raw);
           opts.message(ws.conn, message);
         }
+      }
+    },
+    drain: (ws) => {
+      if (ws.conn && ws.getBufferedAmount() < 512) {
+        const conn: Connection<MessageType, ReplyType> = ws.conn;
+        conn.sendRaw(conn.awaitingData);
+        conn.awaitingData = Buffer.from([rawTypes.UBUF]);
       }
     },
     close: (ws, code, message) => {

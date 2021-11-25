@@ -7,22 +7,20 @@ specifiers:
   cz-conventional-changelog: ^3.3.0
   msgpackr: ^1.5.1
   semantic-release: ^18.0.0
-  sializer: ^0.1.1
   typescript: ^4.4.3
-  uWebSockets.js: github:uNetworking/uWebSockets.js#v20.0.0
+  uWebSockets.js: github:uNetworking/uWebSockets.js#v20.4.0
 
 dependencies:
   '@types/node': 16.10.2
   cuid: 2.1.8
   msgpackr: 1.5.1
-  sializer: 0.1.1
-  uWebSockets.js: github.com/uNetworking/uWebSockets.js/4558ee00f9f1f686fffe1accbfc2e85b1af9c50f
 
 devDependencies:
   commitizen: 4.2.4_typescript@4.4.3
   cz-conventional-changelog: 3.3.0_typescript@4.4.3
   semantic-release: 18.0.0
   typescript: 4.4.3
+  uWebSockets.js: github.com/uNetworking/uWebSockets.js/65f39bdff763be3883e6cf18e433dd4fec155845
 
 packages:
 
@@ -445,10 +443,6 @@ packages:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
     dev: true
 
-  /base64-js/1.5.1:
-    resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
-    dev: false
-
   /before-after-hook/2.2.2:
     resolution: {integrity: sha512-3pZEU3NT5BFUo/AD5ERPWOgQOCZITni6iavr5AUw5AUwQjMlI0kzu5btnyD39AF0gUEsDPwJT+oY1ORBJijPjQ==}
     dev: true
@@ -475,13 +469,6 @@ packages:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
     dev: true
     optional: true
-
-  /buffer/5.7.1:
-    resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
-    dependencies:
-      base64-js: 1.5.1
-      ieee754: 1.2.1
-    dev: false
 
   /cachedir/2.2.0:
     resolution: {integrity: sha512-VvxA0xhNqIIfg0V9AmJkDg91DaJwryutH5rVEZAhcNi4iJFj9f+QxmAjgK1LT9I8OgToX27fypX6/MeCXVbBjQ==}
@@ -1239,10 +1226,6 @@ packages:
     dependencies:
       safer-buffer: 2.1.2
     dev: true
-
-  /ieee754/1.2.1:
-    resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
-    dev: false
 
   /ignore/5.1.8:
     resolution: {integrity: sha512-BMpfD7PpiETpBl/A6S498BaIJ6Y/ABT93ETbby2fP00v4EbvPBXWEoaR1UBPKs3iR53pJY7EtZk5KACI57i1Uw==}
@@ -2269,13 +2252,6 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /sializer/0.1.1:
-    resolution: {integrity: sha512-BqtPsbOXpUPrd1fb0/dRX9IzwbUXJP6NDdSt48Z2af34DkeNKi5INEQby3jqbaKH6EEONlKbpQ20qN4U9wCjng==}
-    dependencies:
-      buffer: 5.7.1
-      utfz-lib: 0.2.0
-    dev: false
-
   /signal-exit/3.0.5:
     resolution: {integrity: sha512-KWcOiKeQj6ZyXx7zq4YxSMgHRlod4czeBQZrPb8OKcohcqAXShm7E20kEMle9WBt26hFcAf0qLOcp5zmY7kOqQ==}
     dev: true
@@ -2617,10 +2593,6 @@ packages:
     resolution: {integrity: sha512-jk1+QP6ZJqyOiuEI9AEWQfju/nB2Pw466kbA0LEZljHwKeMgd9WrAEgEGxjPDD2+TNbbb37rTyhEfrCXfuKXnA==}
     dev: true
 
-  /utfz-lib/0.2.0:
-    resolution: {integrity: sha512-wQhMpAJhwFesoBEkGg44GsDL4Hi09tXvSWLIwh5HKXZkSN1Tc30ZlDH24DEoISz+fKoJTsLjcwd2zM6lAhXQvA==}
-    dev: false
-
   /util-deprecate/1.0.2:
     resolution: {integrity: sha1-RQ1Nyfpw3nMnYvvS1KKJgUGaDM8=}
     dev: true
@@ -2723,8 +2695,8 @@ packages:
     dev: true
     optional: true
 
-  github.com/uNetworking/uWebSockets.js/4558ee00f9f1f686fffe1accbfc2e85b1af9c50f:
-    resolution: {tarball: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/4558ee00f9f1f686fffe1accbfc2e85b1af9c50f}
+  github.com/uNetworking/uWebSockets.js/65f39bdff763be3883e6cf18e433dd4fec155845:
+    resolution: {tarball: https://codeload.github.com/uNetworking/uWebSockets.js/tar.gz/65f39bdff763be3883e6cf18e433dd4fec155845}
     name: uWebSockets.js
-    version: 20.0.0
-    dev: false
+    version: 20.4.0
+    dev: true
