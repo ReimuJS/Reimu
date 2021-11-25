@@ -13,6 +13,7 @@ export enum rawTypes {
   ACK,
   UDATA,
   URES,
+  UBUF,
 }
 
 export enum closeReason {}

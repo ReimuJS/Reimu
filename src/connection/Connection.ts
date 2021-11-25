@@ -4,6 +4,11 @@ import { Message } from "../message/Message";
 import { rawTypes } from "../index";
 import { pack } from "msgpackr";
 
+function numToHex(num: number): Buffer {
+  const numHex = Buffer.from(num.toString(16), "hex");
+  return Buffer.concat([Buffer.from([numHex.length - 1]), numHex]);
+}
+
 export default function createConnection<MessageType, ReplyType>(
   ws: WebSocket
 ): Connection<MessageType, ReplyType> {
@@ -20,23 +25,23 @@ export default function createConnection<MessageType, ReplyType>(
     currentMessageId,
 
     send: (data, onReply) => {
-      const message = {
-        id: currentMessageId++,
-        type: rawTypes.UDATA,
-        data,
-      };
-      sendRaw(pack(message));
+      const message = Buffer.concat([
+        Buffer.from([rawTypes.UDATA]),
+        numToHex(currentMessageId++),
+        pack(data),
+      ]);
+      sendRaw(message);
 
       onReply && onReplyList.push(onReply);
     },
 
     reply: (originalMessage, data) => {
-      const message = {
-        id: originalMessage.id,
-        type: rawTypes.URES,
-        data,
-      };
-      sendRaw(pack(message));
+      const message = Buffer.concat([
+        Buffer.from([rawTypes.URES]),
+        numToHex(originalMessage.id),
+        pack(data),
+      ]);
+      sendRaw(message);
     },
   };
 }
