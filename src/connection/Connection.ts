@@ -31,7 +31,16 @@ export default function createConnection<MessageType>(
   }
   let replyHandlers: { id: number; handler: (message: any) => any }[] = [];
 
-  let acknoledgeList = {
+  let acknoledgeList: {
+    in: {
+      [rawTypes.UDATA]: number[];
+      [rawTypes.URES]: number[];
+    };
+    out: {
+      [rawTypes.UDATA]: number[];
+      [rawTypes.URES]: number[];
+    };
+  } = {
     in: {
       [rawTypes.UDATA]: [],
       [rawTypes.URES]: [],
@@ -67,6 +76,8 @@ export default function createConnection<MessageType>(
       ]);
       sendRaw(message);
 
+      acknoledgeList.out[rawTypes.UDATA].push(id);
+
       onReply && replyHandlers.push({ id, handler: onReply });
     },
 
@@ -77,6 +88,8 @@ export default function createConnection<MessageType>(
         pack(data),
       ]);
       sendRaw(message);
+
+      acknoledgeList.out[rawTypes.UDATA].push(originalMessage.id);
     },
   };
 }
