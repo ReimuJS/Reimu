@@ -16,8 +16,6 @@ export enum rawTypes {
   UBUF,
 }
 
-export enum closeReason {}
-
 export function numToHex(num: number): Buffer {
   let hex = num.toString(16);
   if (hex.length % 2) {

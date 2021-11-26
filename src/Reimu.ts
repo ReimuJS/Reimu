@@ -1,5 +1,5 @@
 import { WebSocketBehavior, CompressOptions, WebSocket } from "uWebSockets.js";
-import { closeReason, numToHex, rawTypes } from ".";
+import { numToHex, rawTypes } from ".";
 import createConnection, { Connection } from "./connection/Connection";
 import createMessage, { Message } from "./message/Message";
 import cuid from "cuid";
@@ -28,7 +28,9 @@ export default function <MessageType>(
 
         if (message == "hello") {
           // Create Connection
-          connections.push(createConnection(ws));
+          const conn = createConnection(ws);
+          connections.push(conn);
+          ws.send(conn.id);
         } else {
           if (cuid.isCuid(message)) {
             // Check for existing connections
