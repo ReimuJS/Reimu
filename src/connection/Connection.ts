@@ -4,29 +4,20 @@ import { Message } from "../message/Message";
 import { numToHex, rawTypes } from "../index";
 import { pack } from "msgpackr";
 
-export function createBufferMessage(
-  starting: Buffer,
-  packedMessage: Buffer
-): Buffer {
-  return Buffer.concat([
-    starting,
-    numToHex(packedMessage.length - 1),
-    packedMessage,
-  ]);
-}
-
 export default function createConnection<MessageType>(
   ws: WebSocket
 ): Connection<MessageType> {
   let currentMessageId = 0;
 
-  let awaitingData: Buffer = Buffer.from([rawTypes.UBUF]);
+  let awaitingData: Buffer[] = [];
+
+  let disconnected: number = -1;
 
   function sendRaw(packedMessage: Buffer) {
-    if (ws.getBufferedAmount() < 512) {
+    if (disconnected === -1 && ws.getBufferedAmount() < 512) {
       ws.send(packedMessage, true);
     } else {
-      awaitingData = createBufferMessage(awaitingData, packedMessage);
+      awaitingData.push(packedMessage);
     }
   }
   let replyHandlers: { id: number; handler: (message: any) => any }[] = [];
@@ -55,8 +46,9 @@ export default function createConnection<MessageType>(
     ws,
 
     id: cuid(),
-    disconnected: -1,
+    disconnected,
     expectedClose: false,
+    mayReconnect: true,
 
     acknoledgeList,
 
@@ -102,6 +94,8 @@ export interface Connection<MessageType> {
   id: string;
   /** Unix time value (or -1 if connected). */
   disconnected: number;
+  /** If the client is allowed to reconnect (if ws was not closed normally). */
+  mayReconnect: boolean;
   /** If the server expected this to close (aka server closed it). */
   expectedClose: boolean;
 
@@ -110,8 +104,8 @@ export interface Connection<MessageType> {
     in: Record<rawTypes.UDATA | rawTypes.URES, number[]>;
     out: Record<rawTypes.UDATA | rawTypes.URES, number[]>;
   };
-  /** Array of bufferred data awaiting backpressure to be drained . */
-  awaitingData: Buffer;
+  /** Arrayed of buffered data awaiting backpressure to be drained . */
+  awaitingData: Buffer[];
   /** Array of reply handlers. */
   replyHandlers: { id: number; handler: (message: any) => any }[];
 

@@ -8,7 +8,8 @@
     "build:windows": "npm run del:windows && tsc",
     "del:windows": "IF EXIST .\\dist\\ rmdir /Q/S .\\dist\\",
     "commit": "git-cz",
-    "acp": "git add . && npm run commit && git push"
+    "acp": "git add . && npm run commit && git push",
+    "test": "node test/index"
   },
   "repository": {
     "type": "git",

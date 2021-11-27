@@ -5,7 +5,6 @@ import createMessage, { Message } from "./message/Message";
 import cuid from "cuid";
 import { decodeRawMessage, messageDecoded } from "./message";
 import { unpack } from "msgpackr";
-import { createBufferMessage } from "./connection/Connection";
 
 export default function <MessageType>(
   options: Partial<options<MessageType>>
@@ -29,13 +28,16 @@ export default function <MessageType>(
         if (message == "hello") {
           // Create Connection
           const conn = createConnection(ws);
+          ws.conn = conn;
           connections.push(conn);
           ws.send(conn.id);
+          opts.open && opts.open(conn);
         } else {
           if (cuid.isCuid(message)) {
             // Check for existing connections
             const found = connections.find(
-              (conn) => conn.id == message && conn.disconnected
+              (conn) =>
+                conn.id == message && conn.disconnected && conn.mayReconnect
             );
 
             if (
@@ -45,6 +47,14 @@ export default function <MessageType>(
             ) {
               ws.conn = found;
               found.disconnected = -1;
+              ws.send(found.id);
+              if (found.awaitingData.length > 1) {
+                found.sendRaw(
+                  createBufferMessage(
+                    found.awaitingData.splice(0, found.awaitingData.length)
+                  )
+                );
+              }
               if (opts.reconnect) opts.reconnect(found);
               return;
             }
@@ -57,12 +67,12 @@ export default function <MessageType>(
         // Connection Assigned
         const decoded = decodeRawMessage(raw);
         if (Array.isArray(decoded)) {
-          let bufferSend: Buffer | false = Buffer.from([rawTypes.UBUF]);
+          let bufferSend: Buffer[] = [];
           decoded.some((message) => {
             try {
               const output = handleMessage(message, ws);
               if (output && bufferSend) {
-                bufferSend = createBufferMessage(bufferSend, output);
+                bufferSend.push(output);
               }
               return false;
             } catch (e) {
@@ -71,8 +81,8 @@ export default function <MessageType>(
               return true;
             }
           });
-          if (bufferSend) {
-            conn.sendRaw(bufferSend);
+          if (bufferSend.length > 0) {
+            conn.sendRaw(createBufferMessage(bufferSend));
           }
         } else {
           try {
@@ -88,21 +98,35 @@ export default function <MessageType>(
       }
     },
     drain: (ws) => {
-      if (ws.conn && ws.getBufferedAmount() < 512) {
+      if (
+        ws.conn &&
+        ws.conn.awaitingData.length > 1 &&
+        ws.getBufferedAmount() < 512
+      ) {
         const conn: Connection<MessageType> = ws.conn;
-        conn.sendRaw(conn.awaitingData);
-        conn.awaitingData = Buffer.from([rawTypes.UBUF]);
+        conn.sendRaw(
+          createBufferMessage(
+            conn.awaitingData.splice(0, conn.awaitingData.length)
+          )
+        );
       }
     },
     close: (ws, code, message) => {
+      if (!ws.conn) return;
+      ws.conn.disconnected = new Date().getTime();
       switch (code) {
+        case 1000:
+          ws.conn.mayReconnect = false;
+          opts.close && opts.close(ws.conn, message);
+          break;
         case 1002:
-          ws.conn.disconnected = new Date().getTime();
-          opts.disconnect && opts.disconnect(ws.conn);
+          opts.disconnect && opts.disconnect(ws.conn, message);
           break;
         case 1006:
-          ws.conn.disconnected = new Date().getTime();
-          opts.disconnect && opts.disconnect(ws.conn);
+          opts.disconnect && opts.disconnect(ws.conn, message);
+          break;
+        default:
+          opts.disconnect && opts.disconnect(ws.conn, message);
           break;
       }
     },
@@ -156,6 +180,15 @@ function createAckMessage(id: number, to: rawTypes) {
   return Buffer.concat([Buffer.from([rawTypes.ACK, to]), numToHex(id)]);
 }
 
+function createBufferMessage(buffers: Buffer[]): Buffer {
+  let toConcat = [Buffer.from([rawTypes.UBUF])];
+  for (const buffer of buffers) {
+    toConcat.push(numToHex(buffer.length));
+    toConcat.push(buffer);
+  }
+  return Buffer.concat(toConcat);
+}
+
 export interface options<MessageType> {
   /** Maximum time in seconds that a client can be disconnected before it will no longer be allowed to reconnect. Defaults to 40. */
   reconnectTimeout: number;
@@ -170,7 +203,10 @@ export interface options<MessageType> {
     message: Message<MessageType>
   ) => any;
   /** Handler for disconnection due to ping timeout (reconnects still allowed). */
-  disconnect?: (connection: Connection<MessageType>) => any;
+  disconnect?: (
+    connection: Connection<MessageType>,
+    reason: ArrayBuffer
+  ) => any;
   /** Handler for reconnection. */
   reconnect?: (connection: Connection<MessageType>) => any;
   /** Handler for close event. */
