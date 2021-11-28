@@ -17,6 +17,14 @@ export default function <MessageType>(
 
   const connections: Connection<MessageType>[] = [];
 
+  setInterval(() => {
+    connections.forEach((connection) => {
+      if (Date.now() - connection.disconnected > opts.reconnectTimeout * 1000) {
+        connections.splice(connections.indexOf(connection), 1);
+      }
+    });
+  }, opts.reconnectTimeout);
+
   return {
     compression: opts.compression,
 
