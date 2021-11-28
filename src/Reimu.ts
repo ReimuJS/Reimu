@@ -119,12 +119,6 @@ export default function <MessageType>(
           ws.conn.mayReconnect = false;
           opts.close && opts.close(ws.conn, message);
           break;
-        case 1002:
-          opts.disconnect && opts.disconnect(ws.conn, message);
-          break;
-        case 1006:
-          opts.disconnect && opts.disconnect(ws.conn, message);
-          break;
         default:
           opts.disconnect && opts.disconnect(ws.conn, message);
           break;
