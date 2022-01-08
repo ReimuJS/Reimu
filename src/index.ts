@@ -1,12 +1,26 @@
-import Server from "./Server";
+import Reimu, { options } from "./Reimu";
 import Connection from "./connection/Connection";
-import Message from "./connection/Message";
 
-export { Server, Connection, Message };
+export { Reimu, options, Connection };
 
-export interface DecodedMessage {
+export interface DecodedMessage<MessageTypes> {
   id: number;
-  type: string;
-  data: any;
-  system: boolean;
+  type: rawTypes;
+  data: MessageTypes;
+}
+
+export enum rawTypes {
+  ACK,
+  UDATA,
+  URES,
+  UBUF,
+}
+
+export function numToHex(num: number): Buffer {
+  let hex = num.toString(16);
+  if (hex.length % 2) {
+    hex = "0" + hex;
+  }
+  const numHex = Buffer.from(hex, "hex");
+  return Buffer.concat([Buffer.from([numHex.length - 1]), numHex]);
 }

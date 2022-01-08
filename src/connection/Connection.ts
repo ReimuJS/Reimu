@@ -1,167 +1,127 @@
-import EventEmitter from "events";
-import msgpack from "msgpack-lite";
-import WebSocket from "ws";
-import uniqid from "uniqid";
-import Message from "./Message";
-import { DecodedMessage } from "../index";
+import cuid from "cuid";
+import { WebSocket } from "uWebSockets.js";
+import { Message } from "../message/Message";
+import { numToHex, rawTypes } from "../index";
+import { pack } from "msgpackr";
 
-export default class Connection extends EventEmitter {
-  /**
-   * The Connection Class
-   * @constructor
-   */
-  constructor(ws: WebSocket, droppedPackets: Map<string, DecodedMessage[]>) {
-    super();
+export default function createConnection<MessageType>(
+  ws: WebSocket
+): Connection<MessageType> {
+  let currentMessageId = 0;
 
-    this.ws = ws;
-    this.id = uniqid();
-    this.messageId = 0;
-    this.connected = false;
+  let awaitingData: Buffer[] = [];
 
-    this.ws.on("close", (code) => {
-      this.emit("close", this.closeCode || code, !!this.closeCode);
-      this.connected = false;
-      if (this.droppedPackets.length > 0 && !this.closeCode)
-        droppedPackets.set(this.id, this.droppedPackets);
-    });
+  let disconnected: number = -1;
 
-    this.ws.on("message", (data) => {
-      new Message(data, this);
-    });
-
-    this.sendRaw(
-      {
-        id: this.messageId++,
-        type: "hello",
-        data: { id: this.id },
-      },
-      {
-        cb: (data) => {
-          // TODO: check if user sends a resume packet in response and resume
-        },
-        type: "response",
-      },
-      true
-    );
+  function sendRaw(packedMessage: Buffer) {
+    if (disconnected === -1 && ws.getBufferedAmount() < 512) {
+      ws.send(packedMessage, true);
+    } else {
+      awaitingData.push(packedMessage);
+    }
   }
+  let replyHandlers: { id: number; handler: (message: any) => any }[] = [];
 
-  // Variables
-
-  private ws;
-  private closeCode?: number;
-  private messageId: number;
-
-  /**
-   * The connection id
-   * @type {string}
-   */
-  public id: string;
-
-  /**
-   * Whether or not Reimu has managed to successfully connect
-   * @type {boolean}
-   */
-  public connected: boolean;
-
-  /**
-   * Packets that haven't been acknoledged
-   * @type {DecodedMessage[]}
-   */
-  public droppedPackets: DecodedMessage[] = [];
-
-  /**
-   * Messages that are awaiting callbacks
-   * @type {any[]}
-   */
-  public awaitCallback: {
-    id: number;
-    type: string;
-    data: any;
-    callback:
-      | { cb: (data: Message) => void; type: "response" }
-      | { cb: () => void; type: "acknoledge" };
-  }[] = [];
-
-  // Functions
-
-  private sendRaw = async (
-    data: any,
-    callback?:
-      | { cb: (data: Message) => void; type: "response" }
-      | { cb: () => void; type: "acknoledge" },
-    system?: boolean
-  ) => {
-    const dataEncoded = msgpack.encode(data);
-    this.ws?.send(dataEncoded);
-
-    this.droppedPackets.push({ ...data, system: !!system });
-
-    if (!!callback) {
-      this.awaitCallback.push({ ...data, callback });
-    } else return;
+  let acknoledgeList: {
+    in: {
+      [rawTypes.UDATA]: number[];
+      [rawTypes.URES]: number[];
+    };
+    out: {
+      [rawTypes.UDATA]: { id: number; data: Buffer }[];
+      [rawTypes.URES]: { id: number; data: Buffer }[];
+    };
+  } = {
+    in: {
+      [rawTypes.UDATA]: [],
+      [rawTypes.URES]: [],
+    },
+    out: {
+      [rawTypes.UDATA]: [],
+      [rawTypes.URES]: [],
+    },
   };
 
-  /**
-   * Attempts to disconnect with the user
-   * @param {number} code - The error code
-   */
-  public disconnect(code: number) {
-    this.closeCode = code;
-    const mId = this.messageId++;
+  return {
+    ws,
 
-    const ifNotAcknoledge = setInterval(() => {
-      if (this.connected) this.ws.close(code);
-    }, 10000);
-    this.sendRaw(
-      {
-        id: mId,
-        type: "close",
-        data: { code },
-      },
-      {
-        cb: () => {
-          clearInterval(ifNotAcknoledge);
-          this.ws.close(code);
-        },
-        type: "acknoledge",
-      },
-      true
-    );
-  }
+    id: cuid(),
+    disconnected,
+    expectedClose: false,
+    mayReconnect: true,
 
-  /**
-   * Sends data to the server
-   * @param {any} data - Data to be sent
-   * @param {Function} [responseCallback] - The callback to use if a response is sent
-   * @returns {void | Message}
-   */
-  public send(data: any, responseCallback?: (data: Message) => void): void {
-    const message = { id: this.messageId++, type: "message", data };
-    this.sendRaw(
-      message,
-      responseCallback ? { cb: responseCallback, type: "response" } : undefined
-    );
-  }
+    acknoledgeList,
 
-  /**
-   * Responds to the message.
-   * @param {any} data - Data to be sent
-   * @param {Message} message - Message Class
-   * @returns {void}
-   */
-  public respond(data: any, message: Message): void {
-    this.sendRaw({ for: message.id, type: "response", data });
-  }
+    currentMessageId,
+
+    awaitingData,
+    replyHandlers,
+
+    sendRaw,
+
+    send: (data, onReply) => {
+      const id = currentMessageId++;
+      const message = Buffer.concat([
+        Buffer.from([rawTypes.UDATA]),
+        numToHex(id),
+        pack(data),
+      ]);
+      sendRaw(message);
+
+      acknoledgeList.out[rawTypes.UDATA].push({ id, data: message });
+
+      onReply && replyHandlers.push({ id, handler: onReply });
+    },
+
+    reply: (originalMessage, data) => {
+      const message = Buffer.concat([
+        Buffer.from([rawTypes.URES]),
+        numToHex(originalMessage.id),
+        pack(data),
+      ]);
+      sendRaw(message);
+
+      acknoledgeList.out[rawTypes.URES].push({
+        id: originalMessage.id,
+        data: message,
+      });
+    },
+  };
 }
 
-export default interface WebSocketManager {
-  /**
-   * Emitted when the connection recieves a message
-   */
-  on(event: "message", callback: (message: Message) => void): this;
+export interface Connection<MessageType> {
+  /** The raw websocket. */
+  ws: WebSocket;
 
-  /**
-   * Emitted when the connection is closed
-   */
-  on(event: "close", callback: (code: number, server: boolean) => void): this;
+  /** The connection id. */
+  id: string;
+  /** Unix time value (or -1 if connected). */
+  disconnected: number;
+  /** If the client is allowed to reconnect (if ws was not closed normally). */
+  mayReconnect: boolean;
+  /** If the server expected this to close (aka server closed it). */
+  expectedClose: boolean;
+
+  /** List of outgoing ids waiting to be acknoledged and inboung ids already acknoledged. */
+  acknoledgeList: {
+    in: Record<rawTypes.UDATA | rawTypes.URES, number[]>;
+    out: Record<rawTypes.UDATA | rawTypes.URES, { id: number; data: Buffer }[]>;
+  };
+  /** Arrayed of buffered data awaiting backpressure to be drained . */
+  awaitingData: Buffer[];
+  /** Array of reply handlers. */
+  replyHandlers: { id: number; handler: (message: any) => any }[];
+
+  /** The current Message id. */
+  currentMessageId: number;
+
+  /** Sends a raw message. */
+  sendRaw: (packedMessage: Buffer) => void;
+  /** Send a message. */
+  send: (data: MessageType, onReply?: (message: any) => any) => void;
+  /** Send a reply. */
+  reply(originalMessage: Message<MessageType>, data: any): void;
+
+  /** Arbitrary user data may be attached to this object. */
+  [key: string]: any;
 }
