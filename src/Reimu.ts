@@ -23,7 +23,7 @@ export default function <MessageType>(
         connections.splice(connections.indexOf(connection), 1);
       }
     });
-  }, opts.reconnectTimeout);
+  }, opts.pruneStaleConnection * 1000);
 
   return {
     compression: opts.compression,

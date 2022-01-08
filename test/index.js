@@ -15,6 +15,12 @@ const t = uws
         console.log(message);
         message.reply("testReply");
       },
+      close: (ws) => {
+        console.log("close");
+      },
+      disconnect: (ws) => {
+        console.log("disconnect");
+      },
     })
   )
   .listen(3000, () => {});
