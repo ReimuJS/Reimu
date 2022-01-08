@@ -28,8 +28,8 @@ export default function createConnection<MessageType>(
       [rawTypes.URES]: number[];
     };
     out: {
-      [rawTypes.UDATA]: number[];
-      [rawTypes.URES]: number[];
+      [rawTypes.UDATA]: { id: number; data: Buffer }[];
+      [rawTypes.URES]: { id: number; data: Buffer }[];
     };
   } = {
     in: {
@@ -68,7 +68,7 @@ export default function createConnection<MessageType>(
       ]);
       sendRaw(message);
 
-      acknoledgeList.out[rawTypes.UDATA].push(id);
+      acknoledgeList.out[rawTypes.UDATA].push({ id, data: message });
 
       onReply && replyHandlers.push({ id, handler: onReply });
     },
@@ -81,7 +81,10 @@ export default function createConnection<MessageType>(
       ]);
       sendRaw(message);
 
-      acknoledgeList.out[rawTypes.UDATA].push(originalMessage.id);
+      acknoledgeList.out[rawTypes.URES].push({
+        id: originalMessage.id,
+        data: message,
+      });
     },
   };
 }
@@ -102,7 +105,7 @@ export interface Connection<MessageType> {
   /** List of outgoing ids waiting to be acknoledged and inboung ids already acknoledged. */
   acknoledgeList: {
     in: Record<rawTypes.UDATA | rawTypes.URES, number[]>;
-    out: Record<rawTypes.UDATA | rawTypes.URES, number[]>;
+    out: Record<rawTypes.UDATA | rawTypes.URES, { id: number; data: Buffer }[]>;
   };
   /** Arrayed of buffered data awaiting backpressure to be drained . */
   awaitingData: Buffer[];
