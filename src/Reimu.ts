@@ -12,6 +12,7 @@ export default function <MessageType>(
   const opts: options<MessageType> = {
     reconnectTimeout: 40,
     pruneStaleConnection: 60,
+    timeoutDelay: 5,
     ...options,
   };
 
@@ -24,6 +25,24 @@ export default function <MessageType>(
       }
     });
   }, opts.pruneStaleConnection * 1000);
+
+  setInterval(() => {
+    for (const connection of connections) {
+      if (connection.disconnected == -1) {
+        let packets = [
+          ...connection.acknoledgeList.out[rawTypes.UDATA].map(
+            ({ data }) => data
+          ),
+          ...connection.acknoledgeList.out[rawTypes.URES].map(
+            ({ data }) => data
+          ),
+        ];
+        if (packets.length) {
+          connection.sendRaw(createBufferMessage(packets));
+        }
+      }
+    }
+  }, opts.timeoutDelay * 1000);
 
   return {
     compression: opts.compression,
@@ -201,6 +220,9 @@ export interface options<MessageType> {
   reconnectTimeout: number;
   /** Time in seconds to check for stale connections and prune them. Defaults to 60. */
   pruneStaleConnection: number;
+
+  /** Number of seconds to check for general events. Defaults to 5. */
+  timeoutDelay: number;
 
   /** Handler for new Connection. */
   open?: (connection: Connection<MessageType>) => any;
