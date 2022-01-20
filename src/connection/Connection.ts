@@ -128,7 +128,7 @@ export interface Connection<MessageType> {
   /** Sends a raw message. */
   sendRaw: (packedMessage: Buffer, publish?: string) => void;
   /** Send a message. */
-  send: (data: any, onReply: (message: any) => any) => void;
+  send: (data: any, onReply?: (message: any) => any) => void;
   /** Send a stream message (message that isn't always expected to be recieved). */
   stream: (data: any, publish?: RecognizedString) => void;
   /** Send a reply. */
