@@ -198,6 +198,11 @@ export default function <MessageType>(
         }
         return createAckMessage(decoded.id, rawTypes.URES);
       }
+      case rawTypes.USDATA: {
+        if (opts.stream) {
+          opts.stream(ws.conn, unpack(decoded.data));
+        }
+      }
     }
   }
 }
@@ -231,6 +236,8 @@ export interface options<MessageType> {
     connection: Connection<MessageType>,
     message: Message<MessageType>
   ) => any;
+  /** Handler for stream data (data that isn't always expected to be recieved). */
+  stream?: (connection: Connection<MessageType>, message: any) => any;
   /** Handler for disconnection due to ping timeout (reconnects still allowed). */
   disconnect?: (
     connection: Connection<MessageType>,

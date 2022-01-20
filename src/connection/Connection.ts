@@ -1,5 +1,5 @@
 import cuid from "cuid";
-import { WebSocket } from "uWebSockets.js";
+import { RecognizedString, WebSocket } from "uWebSockets.js";
 import { Message } from "../message/Message";
 import { numToHex, rawTypes } from "../index";
 import { pack } from "msgpackr";
@@ -13,11 +13,13 @@ export default function createConnection<MessageType>(
 
   let disconnected: number = -1;
 
-  function sendRaw(packedMessage: Buffer) {
+  function sendRaw(packedMessage: Buffer, publish?: RecognizedString) {
     if (disconnected === -1 && ws.getBufferedAmount() < 512) {
-      ws.send(packedMessage, true);
+      publish
+        ? ws.publish(publish, packedMessage, true)
+        : ws.send(packedMessage, true);
     } else {
-      awaitingData.push(packedMessage);
+      packedMessage[0] != rawTypes.USDATA && awaitingData.push(packedMessage);
     }
   }
   let replyHandlers: { id: number; handler: (message: any) => any }[] = [];
@@ -73,6 +75,14 @@ export default function createConnection<MessageType>(
       onReply && replyHandlers.push({ id, handler: onReply });
     },
 
+    stream: (data, publish) => {
+      const message = Buffer.concat([
+        Buffer.from([rawTypes.USDATA]),
+        pack(data),
+      ]);
+      sendRaw(message, publish);
+    },
+
     reply: (originalMessage, data) => {
       const message = Buffer.concat([
         Buffer.from([rawTypes.URES]),
@@ -116,9 +126,11 @@ export interface Connection<MessageType> {
   currentMessageId: number;
 
   /** Sends a raw message. */
-  sendRaw: (packedMessage: Buffer) => void;
+  sendRaw: (packedMessage: Buffer, publish?: string) => void;
   /** Send a message. */
-  send: (data: MessageType, onReply?: (message: any) => any) => void;
+  send: (data: any, onReply: (message: any) => any) => void;
+  /** Send a stream message (message that isn't always expected to be recieved). */
+  stream: (data: any, publish?: RecognizedString) => void;
   /** Send a reply. */
   reply(originalMessage: Message<MessageType>, data: any): void;
 
