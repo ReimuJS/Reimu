@@ -14,6 +14,7 @@ export enum rawTypes {
   UDATA,
   URES,
   UBUF,
+  USDATA,
 }
 
 export function numToHex(num: number): Buffer {
