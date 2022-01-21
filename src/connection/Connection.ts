@@ -19,7 +19,9 @@ export default function createConnection<MessageType>(
         ? ws.publish(publish, packedMessage, true)
         : ws.send(packedMessage, true);
     } else {
-      packedMessage[0] != rawTypes.USDATA && awaitingData.push(packedMessage);
+      packedMessage[0] != rawTypes.USDATA &&
+        !publish &&
+        awaitingData.push(packedMessage);
     }
   }
   let replyHandlers: { id: number; handler: (message: any) => any }[] = [];
@@ -61,14 +63,14 @@ export default function createConnection<MessageType>(
 
     sendRaw,
 
-    send: (data, onReply) => {
+    send: (data, onReply, publish) => {
       const id = currentMessageId++;
       const message = Buffer.concat([
         Buffer.from([rawTypes.UDATA]),
         numToHex(id),
         pack(data),
       ]);
-      sendRaw(message);
+      sendRaw(message, publish);
 
       acknoledgeList.out[rawTypes.UDATA].push({ id, data: message });
 
@@ -128,7 +130,11 @@ export interface Connection<MessageType> {
   /** Sends a raw message. */
   sendRaw: (packedMessage: Buffer, publish?: string) => void;
   /** Send a message. */
-  send: (data: any, onReply?: (message: any) => any) => void;
+  send: (
+    data: any,
+    onReply?: (message: any) => any,
+    publish?: RecognizedString
+  ) => void;
   /** Send a stream message (message that isn't always expected to be recieved). */
   stream: (data: any, publish?: RecognizedString) => void;
   /** Send a reply. */
