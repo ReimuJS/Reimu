@@ -87,7 +87,7 @@ export default function <MessageType>(
             }
           }
 
-          return ws.end(1002, "Invalid ID");
+          return ws.end(4002, "Invalid ID");
         }
       } else {
         const conn: Connection<MessageType> = ws.conn;
@@ -104,7 +104,7 @@ export default function <MessageType>(
               return false;
             } catch (e) {
               conn.expectedClose = true;
-              ws.end(1002, "Invalid Message");
+              ws.end(4002, "Invalid Message");
               return true;
             }
           });
@@ -119,7 +119,7 @@ export default function <MessageType>(
             }
           } catch (e) {
             conn.expectedClose = true;
-            ws.end(1002, "Invalid Message");
+            ws.end(4002, "Invalid Message");
           }
         }
       }
